@@ -154,7 +154,9 @@ setInterval(setLive, 5000);
 
 // ---------- derived ----------
 function books() { return D.sum ? Object.keys(D.sum.b) : []; }
-function bk(b) { const v = D.sum.b[b]; return v && {eq: v[0], pct: v[1], w: v[2], l: v[3], closed: v[4], wr: v[5], dd: v[6], mult: v[7], lab: v[8], base: v[9]}; }
+function bk(b) { const v = D.sum.b[b]; return v && {eq: v[0], pct: v[1], w: v[2], l: v[3], closed: v[4], wr: v[5], dd: v[6], mult: v[7], lab: v[8], base: v[9], ov: v[10] || [0, null, null]}; }
+function liveAgents(list) { const ag = D.ag || {}; return list.filter(k => ag[k]); }   // only agents the desk actually runs
+function liveLabs() { return [...new Set(Object.keys(D.sum.eco || {}).flatMap(e => (ECO[e] && ECO[e].labs) || []))]; }
 function ecoOf(b) { const v = bk(b); const base = (v && v.base) || b; for (const [k, e] of Object.entries(D.sum.eco || {})) if (e[1].includes(base)) return k; return null; }
 function booksOf(e) { return books().filter(b => ecoOf(b) === e); }
 function mainBooks() { return books().filter(b => !bk(b).lab); }
@@ -254,11 +256,11 @@ function renderOverview() {
     const eq = bs.reduce((a, b) => a + bk(b).eq, 0), st = s0 * bs.length, p = (eq / st - 1) * 100;
     const ww = bs.reduce((a, b) => a + bk(b).w, 0), ll = bs.reduce((a, b) => a + bk(b).l, 0), op = ps.filter(x => bs.includes(x.book)).length;
     return `<div class=eco data-t="${k}"><div class=en><b>${esc(e[0])}</b><small>${bs.length > 1 ? bs.length + ' portafogli · ' : ''}V/P ${ww}/${ll} · ${op} aperte</small></div>${spark(totalSeries(bs), eq >= st)}<div class=ev>${E(eq, 0)}<small class=${cls(p)}>${sg(p)}${f(p)}%</small></div></div>`; }).join('');
-  const labs = ['Lab Segnali', 'Lab Uscite', 'Lab Scalping', 'Lab Sentinel', 'Lab Copy'];
+  const labs = liveLabs();
   $('view').innerHTML = hero(`Equity totale · ${mb.length} portafogli`, eqT, pnl, pct, w, l,
       [['Chiusi', cl], ['Aperte', ps.length], ['Partenza', '€' + f(mb.length * 1000, 0)]], 'ch_all')
     + `<div class=card><h3>Portafogli<span class=cnt>tocca per aprire</span></h3>${ecoRows}</div>`
-    + agentsCard(Object.keys(A), 'Desk')
+    + agentsCard(liveAgents(Object.keys(A)), 'Desk')
     + positionsCard(ps.filter(p => mb.includes(p.book)), true)
     + feedCard(D.feed && D.feed.f, 'Logger · attività live', 'tutti gli agenti')
     + labCard(labs, null) + tradesCard(mb);
@@ -275,11 +277,17 @@ function renderEco(e) {
   const chips = bs.length > 1 ? '<div class=chips>' + bs.map(x => `<button class="chip${x === b ? ' on' : ''}" data-b="${x}">${esc(bk(x).lab ? '🧪 ' + x : (BOOK_NAME[x] || x).split(' · ')[0])}</button>`).join('') + '</div>' : '';
   $('view').innerHTML = `<div class=desc>${ECO[e] ? ECO[e].desc : ''}${B.lab ? '<br>🧪 ' + esc(B.lab) : ''}</div>` + chips
     + hero('Equity paper · ' + esc(name), B.eq, B.eq - s0, B.pct, B.w, B.l, [['Win rate', B.wr == null ? '–' : f(B.wr, 0) + '%'], ['Max DD', `<span class=${B.dd < 0 ? 'neg' : 'neu'}>${f(B.dd, 1)}%</span>`], ['Chiusi', B.closed]], 'ch_' + e)
-    + positionsCard(ps, false) + agentsCard(ECO[e] ? ECO[e].agents : [], 'Agenti di questo portafoglio')
+    + overshootNote(B) + positionsCard(ps, false) + agentsCard(liveAgents(ECO[e] ? ECO[e].agents : []), 'Agenti di questo portafoglio')
     + feedCard(D['feed/' + e] && D['feed/' + e].f, 'Attività live', esc(D.sum.eco[e][0]))
     + labCard(ECO[e] ? ECO[e].labs : [], bs) + tradesCard([b]) + (e === 'prudente' || e === 'aggressivo' ? killsCard() : '');
   document.querySelectorAll('.chip').forEach(c => c.onclick = () => { sub[e] = c.dataset.b; haptic(); render(); });
   chart('ch_' + e, [[name, ser, B.eq >= s0 ? '#1fe08a' : '#ff4d64', true]], 1000);
+}
+function overshootNote(B) {
+  const [n, avg, worst] = B.ov; if (!n) return '';
+  return `<div class=card><h3>Precisione delle uscite<span class=cnt>${n} uscite su stop/obiettivo</span></h3><div class=sub style="margin:0">
+    <span class=${cls(Math.round(avg * 10))}>${sg(avg)}${f(avg, 1)} punti</span><span class=neu style="font-weight:500;font-size:12.5px">in media rispetto alla soglia · peggiore ${sg(worst)}${f(worst, 1)}</span></div>
+    <div class=desc style="margin:6px 0 0">Quanto il prezzo di uscita è finito oltre lo stop (o l’obiettivo): più vicino a 0, meglio è.</div></div>`;
 }
 function setTab(t) { tab = t; localStorage.setItem('cx_tab', t); haptic(); render(); window.scrollTo({top: 0}); }
 function renderTabs() {
