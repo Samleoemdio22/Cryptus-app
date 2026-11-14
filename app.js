@@ -30,16 +30,17 @@ const ICON={Scout:"<circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/>",F
  Lab:"<path d='M9 3h6M10 3v6L4.5 18.5A2 2 0 006.2 21h11.6a2 2 0 001.7-2.5L14 9V3'/><path d='M7 15h10'/>",Sentinel:"<path d='M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z'/><circle cx='12' cy='12' r='3'/>",
  Hunter:"<circle cx='12' cy='12' r='8'/><path d='M12 2v4M12 18v4M2 12h4M18 12h4'/>",Mirror:"<rect x='8' y='8' width='12' height='12' rx='2'/><path d='M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2'/>"};
 const BOOK_NAME={A_spec:'Prudente A · stop −6%',B_wide:'Prudente B · stop −12%',C_spec_4h:'Prudente C · time stop 4h',D_wide_noregime:'Prudente D · senza regime',
- X_aggressive:'Aggressivo',X_aggr_sentinel:'Aggressivo + Sentinel',S_scalp:'Scalping',K_copy:'Copytrading'};
+ X_aggressive:'Aggressivo',X_aggr_sentinel:'Aggressivo + Sentinel',S_scalp:'Scalping',P_pump:'Pump organici · impulso ≥ 65'};
 const ECO={
  prudente:{agents:['Regime','Scout','Filter','Analyst','Executor','Risk','Lab','Logger'],labs:['Lab Segnali','Lab Uscite'],desc:'Filtri rigorosi e punteggio ≥ 70. Quattro varianti di uscita sugli stessi segnali: A stop −6%, B stop −12%, C con time stop 4h, D come B ma senza pausa di mercato.'},
  aggressivo:{agents:['Scout','Filter','Analyst','Executor','Risk','Lab'],labs:['Lab Segnali','Lab Uscite'],desc:'Stessi controlli di sicurezza, filtri “morbidi” più larghi e punteggio ≥ 60: più trade, più rischio.'},
  sentinel:{agents:['Filter','Analyst','Executor','Sentinel','Risk','Lab'],labs:['Lab Sentinel'],desc:'Gemello dell’Aggressivo con Sentinel: se vede segni di dump vende metà, se è grave esce del tutto. Test A/B.'},
  scalping:{agents:['Filter','Scalp','Executor','Risk','Lab'],labs:['Lab Scalping'],desc:'Entrate veloci su forte spinta a 5 minuti: obiettivo +4,5%, stop −3%, massimo 20 minuti. Costi inclusi.'},
+ pump:{agents:['Scout','Filter','Analyst','Executor','Risk','Lab'],labs:['Lab Pump'],desc:'Entra sui pump organici precoci: impulso ≥ 65, volume finto < 30, niente firme da bot, tutti i filtri di sicurezza. Stop −7%, trailing 6% dopo +10%, massimo 50 minuti. Size 8%.'},
  copy:{agents:['Hunter','Mirror','Filter','Executor','Sentinel','Risk','Lab'],labs:['Lab Copy'],desc:'Hunter cerca wallet bravi, Mirror copia i loro acquisti (con ritardo e slippage simulati), stessi filtri di sicurezza.'}};
 const EXIT={leader_sell:'wallet copiato ha venduto',sentinel_warning:'Sentinel (warning)',sentinel_critical:'Sentinel (critico)',stop_loss:'stop loss',trail_stop:'trailing stop',time_stop:'time stop',take_profit:'take profit',liquidity_collapse:'liquidità crollata'};
 const KR={pumped_h1:'Già +80% in 1h',low_liquidity:'Liquidità < $20k',liq_to_mcap:'Liq/mcap < 5%',unverifiable:'Non verificabile',rugged_flag:'Segnalato rug',mint_authority:'Mint non revocata',
- freeze_authority:'Freeze non revocata',transfer_fee:'Tassa sul trasferimento',lp_not_locked:'LP non bloccata',top10_concentration:'Top-10 holder troppo alti',dev_holding:'Dev > 3%',dev_past_rugs:'Dev con rug passati',bundle_insiders:'Bundle/insider > 10%'};
+ freeze_authority:'Freeze non revocata',transfer_fee:'Tassa sul trasferimento',lp_not_locked:'LP non bloccata',top10_concentration:'Top-10 holder troppo alti',dev_holding:'Dev > 3%',dev_past_rugs:'Dev con rug passati',bundle_insiders:'Bundle/insider > 10%',fake_volume:'Volume finto (bot)',volume_bot:'Volume finto (bot)',bump_bot:'Volume finto (bot)',tape_quality:'Volume finto (bot)',wash_volume:'Volume finto (bot)'};
 const SI={shadow:['in prova','st-sh'],guard:['guardia','st-sh'],promoted:['promosso','st-pr'],rejected:['respinto','st-rj'],expired:'scaduto',confirmed:['confermato','st-pr'],rolled_back:['annullato','st-rj']};
 const PAL=['#1fe08a','#5aa9ff','#f6c453','#a78bfa','#ff9b45','#2fe0d2','#ff7ad9','#7dd3fc','#e2c044','#ff6b3d'];
 
@@ -47,6 +48,7 @@ const PAL=['#1fe08a','#5aa9ff','#f6c453','#a78bfa','#ff9b45','#2fe0d2','#ff7ad9'
 const D = {}, TS = {};          // latest payload and its timestamp per message key
 let eqs = {};                   // book -> [[t,usd],...]
 let tab = localStorage.getItem('cx_tab') || 'overview', sub = {}, charts = {}, seen = new Set(), firstFeed = true;
+const LAT = []; window.__cxLat = LAT; window.__cxD = () => D;   // [event->app s, publish->app s] for feed deltas (debug/measurement)
 let lastMsgAt = 0, mqttUp = false, ntfyUp = false, renderQueued = false;
 
 // ---------- utils ----------
@@ -87,10 +89,30 @@ async function mqttTopic() {
 }
 
 // ---------- ingest ----------
+const F2_MAX = 150;
+let LOGO = {};                  // symbol -> 'd:<id>' | https url
+function mergeLines(lines) {    // talking feed lines [id, ts, stage, kind, text, sym, pills, ecos]
+  const cur = (D.f2 && D.f2.f) || [], have = new Set(cur.map(x => x[0]));
+  const add = lines.filter(x => !have.has(x[0])); if (!add.length) return false;
+  D.f2 = {f: add.concat(cur).sort((a, b) => b[0] - a[0]).slice(0, F2_MAX)};
+  const ag = D.ag2 || (D.ag2 = {});
+  for (const x of add) { const st = x[2], o = ag[st]; if (!o || !(o[0] > x[1])) ag[st] = [x[1], x[3], x[4], x[5], x[6], o ? o[5] : null]; }
+  return true;
+}
 function apply(key, ts, d) {
   if (key.startsWith('eq/')) { const b = key.slice(3); if (!(TS[key] > ts)) { TS[key] = ts; eqs[b] = d.s || []; } return; }
+  if (key === 'fd') { mergeLines(d.f || []); return; }                       // live delta (non-retained)
+  if (key === 'lg' || key === 'logos') { Object.assign(LOGO, d.l || {}); fixLogos(); return; }
   if (TS[key] > ts) return;
-  TS[key] = ts; D[key] = d;
+  TS[key] = ts;
+  if (key === 'f2') { const keep = ((D.f2 && D.f2.f) || []).filter(x => x[0] > Math.max(...(d.f || [[0]]).map(y => y[0]))); D.f2 = {f: []}; mergeLines(keep.concat(d.f || [])); return; }
+  if (key === 'ag2') { const old = D.ag2 || {}; for (const [k, v] of Object.entries(d)) if (old[k] && old[k][0] > (v[0] || 0)) d[k] = [...old[k].slice(0, 5), v[5]]; D.ag2 = d; return; }
+  if (key === 'sum') liveEq(ts, d);
+  D[key] = d;
+}
+function liveEq(ts, d) {        // extend each equity curve with the live value (series itself arrives every 5 min)
+  for (const [b, v] of Object.entries(d.b || {})) { const s = eqs[b]; if (!s || !s.length) continue;
+    const last = s[s.length - 1]; if (ts - last[0] >= 20) s.push([ts, v[0]]); else if (s.length > 1 && last[0] > s[s.length - 2][0] && ts > last[0]) { last[0] = ts; last[1] = v[0]; } }
 }
 async function ingest(bytes, via) {
   let m;
@@ -100,6 +122,7 @@ async function ingest(bytes, via) {
   else if (m.k === 'eqs') { for (const [b, s] of Object.entries(m.d)) apply('eq/' + b, m.ts, {s}); }
   else apply(m.k, m.ts, m.d);
   lastMsgAt = Math.max(lastMsgAt, m.ts);
+  if (m.k === 'fd' && m.d.f && m.d.f.length) { const lt = Math.max(...m.d.f.map(x => x[1])); LAT.push([Date.now() / 1000 - lt, Date.now() / 1000 - m.ts]); if (LAT.length > 50) LAT.shift(); }
   queueRender();
 }
 const b64bytes = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
@@ -155,7 +178,7 @@ setInterval(setLive, 5000);
 // ---------- derived ----------
 function books() { return D.sum ? Object.keys(D.sum.b) : []; }
 function bk(b) { const v = D.sum.b[b]; return v && {eq: v[0], pct: v[1], w: v[2], l: v[3], closed: v[4], wr: v[5], dd: v[6], mult: v[7], lab: v[8], base: v[9], ov: v[10] || [0, null, null]}; }
-function liveAgents(list) { const ag = D.ag || {}; return list.filter(k => ag[k]); }   // only agents the desk actually runs
+function liveAgents(list) { const ag = D.ag2 || D.ag || {}; return list.filter(k => ag[k]); }   // only agents the desk actually runs
 function liveLabs() { return [...new Set(Object.keys(D.sum.eco || {}).flatMap(e => (ECO[e] && ECO[e].labs) || []))]; }
 function ecoOf(b) { const v = bk(b); const base = (v && v.base) || b; for (const [k, e] of Object.entries(D.sum.eco || {})) if (e[1].includes(base)) return k; return null; }
 function booksOf(e) { return books().filter(b => ecoOf(b) === e); }
@@ -169,12 +192,77 @@ function totalSeries(bs) {
     tot += (bs.length - ser.length) * s0; return [t, tot]; });
 }
 
+// ---------- v2: talking lines, logos, keyed patching ----------
+const KIND = {buy: ['🟢', '#1fe08a'], sell: ['🔵', '#2fe0d2'], tp: ['💰', '#2fe0d2'], stop: ['🔴', '#ff4d64'], trail: ['🟠', '#ff8a5b'],
+  discard: ['⚪', '#8a939e'], eval: ['🟡', '#f6c453'], pass: ['✅', '#8be9a8'], sentinel: ['🛡️', '#ff8a3d'], lab: ['🧪', '#b48cff'],
+  regime: ['🌡️', '#5aa9ff'], info: ['🔹', '#9aa4b2'], warn: ['⚠️', '#ffb547']};
+const TONE = {g: 'g', r: 'r', t: 't', a: 'a', o: 'o', p: 'p', n: 'n'};
+const BIDI = /[\u202a-\u202e\u2066-\u2069\u200e\u200f]/g;
+function logoUrl(v) { return !v ? null : v.startsWith('d:') ? 'https://cdn.dexscreener.com/cms/images/' + v.slice(2) + '?width=64&height=64&fit=crop&quality=90&format=auto' : v; }
+function hue(s) { let h = 0; for (const c of s) h = (h * 31 + c.codePointAt(0)) % 360; return h; }
+function initials(s) { const t = s.replace(BIDI, '').replace(/[^\p{L}\p{N}]/gu, ''); return (t || s || '?').slice(0, 2).toUpperCase(); }
+function fbLogo(sym) { const h = hue(sym); return `<span class="tk fb" data-s="${esc(sym)}" style="background:linear-gradient(135deg,hsl(${h} 65% 42%),hsl(${(h + 40) % 360} 70% 30%))">${esc(initials(sym))}</span>`; }
+function logo(sym) {
+  if (!sym) return '';
+  const u = logoUrl(LOGO[sym]);
+  return u ? `<img class=tk loading=lazy decoding=async referrerpolicy=no-referrer alt="" data-s="${esc(sym)}" src="${esc(u)}" onerror="lgErr(this)">` : fbLogo(sym);
+}
+window.lgErr = el => { const s = el.dataset.s; LOGO[s] = null; el.outerHTML = fbLogo(s); };
+function fixLogos() {           // upgrade initials circles once a logo arrives
+  document.querySelectorAll('.tk.fb').forEach(el => { const u = logoUrl(LOGO[el.dataset.s]); if (u) el.outerHTML = logo(el.dataset.s); });
+}
+const pills = (ps, n) => (ps || []).slice(0, n).map(p => `<span class="pi ${TONE[p[1]] || 'n'}">${esc(p[0])}</span>`).join('');
+const rt = ts => `<span class=rt data-ts="${ts || 0}">${ts ? ago(ts) : ''}</span>`;
+function fixRt() { document.querySelectorAll('.rt').forEach(el => { const t = +el.dataset.ts; if (t) el.textContent = ago(t); }); }
+setInterval(fixRt, 5000);
+function oldToNew(a) { return [a[0], a[1], a[2], 'info', a[3], null, [], null, 1]; }   // ntfy-only fallback (old line format)
+function feedLines(e) {
+  const f = D.f2 && D.f2.f ? D.f2.f : ((D.feed && D.feed.f) || []).map(oldToNew);
+  return (e ? f.filter(x => !x[7] || x[7].includes(e)) : f).slice(0, e ? 40 : 60);
+}
+const lk = x => (x[8] ? 'o' : '') + x[0];   // old-format lines get their own key so v2 lines replace them
+function lineHTML(x, fresh) {
+  const [id, ts, st, k, text, sym] = x; const [em, col] = KIND[k] || KIND.info;
+  return `<div class="ln k-${esc(k)}${fresh ? ' new' : ''}" data-id="${lk(x)}" style="--kc:${col}"><span class=em>${em}</span>${logo(sym)}<span class=tx>${esc((text || '').replace(BIDI, ''))}</span>${pills(x[6], 2)}${rt(ts)}</div>`;
+}
+
+// keyed card patching: a card is rebuilt only if its HTML changed; the chart canvas and feed DOM survive updates
+const prevVal = {};             // card key -> last tweened number
+function patch(cards) {
+  const v = $('view'); const want = new Set(cards.map(c => c[0]));
+  [...v.children].forEach(el => { if (!want.has(el.dataset.k)) el.remove(); });
+  let prev = null;
+  for (const [k, html, opt] of cards) {
+    let el = [...v.children].find(x => x.dataset.k === k);
+    if (opt && opt.feed && el) opt.feed(el);
+    else if (!el || el._h !== html) {
+      const t = document.createElement('template'); t.innerHTML = html.trim(); const n = t.content.firstElementChild;
+      n.dataset.k = k; n._h = html;
+      if (el) el.replaceWith(n); else v.appendChild(n);
+      el = n;
+      if (opt && opt.after) opt.after(el);
+    }
+    const target = prev ? prev.nextElementSibling : v.firstElementChild;
+    if (el !== target) v.insertBefore(el, target);
+    prev = el;
+  }
+  fixRt();
+}
+function tween(el, key, to, fmt) {
+  if (!el) return; const from = prevVal[key]; prevVal[key] = to;
+  if (from == null || from === to || matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = fmt(to); return; }
+  el.classList.remove('fu', 'fd'); void el.offsetWidth; el.classList.add(to > from ? 'fu' : 'fd');
+  const t0 = performance.now(), dur = 700;
+  const step = t => { const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3); el.textContent = fmt(from + (to - from) * e); if (p < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+
 // ---------- components ----------
 function chart(id, sets, base) {
   const cv = $(id); if (!cv || !window.Chart) return;
   const all = sets.flatMap(s => s[1]);
   const wrap = cv.parentElement; const em = wrap.querySelector('.chartempty');
-  if (all.length < 2) { if (!em) wrap.insertAdjacentHTML('beforeend', '<div class=chartempty>Il grafico compare dopo i primi minuti di dati</div>'); return; }
+  if (all.length < 2) { if (!em) wrap.insertAdjacentHTML('beforeend', '<div class="chartempty sk"><div class="skl chart"></div><span>Il grafico compare dopo i primi minuti di dati</span></div>'); return; }
   if (em) em.remove();
   const ds = sets.map(([b, ser, col, fill]) => {
     let bg = 'transparent';
@@ -185,14 +273,16 @@ function chart(id, sets, base) {
   const ys = all.map(p => eur(p[1])).concat([base]); let y0 = Math.min(...ys), y1 = Math.max(...ys);
   const pad = Math.max((y1 - y0) * 0.12, base * 0.002); y0 -= pad; y1 += pad;
   ds.push({label: 'base', data: [{x: x0 * 1000, y: base}, {x: x1 * 1000, y: base}], borderColor: 'rgba(255,255,255,.18)', borderDash: [4, 4], borderWidth: 1, pointRadius: 0});
-  const opt = {maintainAspectRatio: false, animation: false, parsing: false, interaction: {intersect: false, mode: 'nearest', axis: 'x'},
+  const opt = {maintainAspectRatio: false, animation: {duration: 400}, parsing: false, interaction: {intersect: false, mode: 'nearest', axis: 'x'},
     plugins: {legend: {display: sets.length > 1, labels: {color: '#9aa4b2', boxWidth: 8, boxHeight: 8, font: {family: 'Inter', size: 10}, filter: i => i.text !== 'base'}},
       tooltip: {backgroundColor: '#14181d', borderColor: 'rgba(255,255,255,.1)', borderWidth: 1, filter: i => i.dataset.label !== 'base',
         callbacks: {title: it => new Date(it[0].parsed.x).toLocaleString('it-IT', {timeZone: TZ, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'}), label: it => ` ${it.dataset.label}: €${f(it.parsed.y)}`}}},
     scales: {x: {type: 'linear', min: x0 * 1000, max: x1 * 1000, grid: {display: false}, border: {display: false}, ticks: {color: '#5b636e', font: {family: 'Inter', size: 10}, maxTicksLimit: 5, callback: v => new Date(v).toLocaleTimeString('it-IT', {timeZone: TZ, hour: '2-digit', minute: '2-digit'})}},
       y: {min: y0, max: y1, grid: {color: 'rgba(255,255,255,.04)'}, border: {display: false}, ticks: {color: '#5b636e', font: {family: 'Inter', size: 10}, maxTicksLimit: 5, callback: v => '€' + f(v, (y1 - y0) < 20 ? 1 : 0)}}}};
-  if (charts[id] && charts[id].canvas === cv) { charts[id].data.datasets = ds; charts[id].options = opt; charts[id].update('none'); }
-  else { if (charts[id]) charts[id].destroy(); charts[id] = new Chart(cv, {type: 'line', data: {datasets: ds}, options: opt}); }
+  const sig = JSON.stringify([ds.map(d => d.data.length + ':' + (d.data.length ? d.data[d.data.length - 1].y : 0)), y0, y1]);
+  if (charts[id] && charts[id].canvas === cv) { if (charts[id]._sig === sig) return; charts[id].data.datasets = ds; charts[id].options = opt; charts[id].update(); }
+  else { if (charts[id]) charts[id].destroy(); charts[id] = new Chart(cv, {type: 'line', data: {datasets: ds}, options: Object.assign({}, opt, {animation: false})}); }
+  charts[id]._sig = sig;
 }
 function spark(ser, up) {
   if (!ser || ser.length < 2) return '<svg class=spark></svg>';
@@ -200,51 +290,85 @@ function spark(ser, up) {
   const pts = ser.map((p, i) => `${(i / (ser.length - 1) * 64).toFixed(1)},${(26 - (p[1] - mn) / r * 24).toFixed(1)}`).join(' ');
   return `<svg class=spark viewBox="0 0 64 28"><polyline points="${pts}" fill="none" stroke="${up ? '#1fe08a' : '#ff4d64'}" stroke-width="1.7" stroke-linejoin="round"/></svg>`;
 }
-function hero(label, eqUsd, pnlUsd, pct, w, l, extra, chartId) {
+function heroCard(k, label, eqUsd, pnlUsd, pct, w, l, extra) {
   const mult = eqUsd / (pnlUsd != null ? eqUsd - pnlUsd : eqUsd);
-  return `<div class="card hero"><div class=lbl>${label}</div><div class=eq>${E(eqUsd)}</div>
-  <div class=sub><span class=${cls(pnlUsd)}>${sg(pnlUsd)}${E(pnlUsd)} (${sg(pct)}${f(pct)}%)</span><span class="badge${mult < 1 ? ' neg' : Math.abs(mult - 1) < 1e-9 ? ' neu' : ''}">${f(mult, 3)}x</span></div>
-  <div class=stats>${[['V / P', `<span class=pos>${w}</span> / <span class=neg>${l}</span>`]].concat(extra).map(([k, v]) => `<div class=st><div class=k>${k}</div><div class=v>${v}</div></div>`).join('')}</div>
-  <div class=chartw><canvas id=${chartId}></canvas></div></div>`;
+  // the big number is filled (and tweened) after patching, so tiny equity moves don't rebuild the card
+  return [k, `<div class="card hero"><div class=lbl>${label}</div><div class=eq data-n="${eqUsd}">${E(prevVal[k] ?? eqUsd)}</div>
+  <div class=pnl><span class="pv ${cls(pnlUsd)}">${sg(pnlUsd)}${E(pnlUsd)}</span><span class="pc ${cls(pnlUsd)}">${sg(pct)}${f(pct)}%</span><span class="badge${mult < 1 ? ' neg' : Math.abs(mult - 1) < 1e-9 ? ' neu' : ''}">${f(mult, 3)}x</span><span class=pnll>P&amp;L dalla partenza</span></div>
+  <div class=stats>${[['V / P', `<span class=pos>${w}</span> / <span class=neg>${l}</span>`]].concat(extra).map(([k2, v]) => `<div class=st><div class=k>${k2}</div><div class=v>${v}</div></div>`).join('')}</div></div>`];
 }
-function agentsCard(list, title) {
-  const ag = D.ag || {};
-  return `<div class=card><h3>${title}<span class=cnt>${list.length} agenti</span></h3>${list.map(k => { const [nm, c, su] = A[k] || [k, '#ccc', '']; const a = ag[k] || [];
-    return `<div class=agent><div class=ic style="background:${c}1a;color:${c}">${svg(k)}</div><div class=an><b>${nm}</b><small>${su}</small><div class=l>${a[1] ? `<span class=ago>${ago(a[0])}</span>${esc(a[1])}` : '<span class=ts>nessuna azione ancora</span>'}</div></div><span class=pill>${esc(a[2] ?? '–')}</span></div>`; }).join('')}</div>`;
+const chartCard = id => [id, `<div class="card chartcard"><div class=chartw><canvas id=${id}></canvas></div></div>`];
+const lastAg = {};
+function agentsCard(k, list, title) {
+  const ag = D.ag2 || {}, old = D.ag || {};
+  const rows = list.map(a => {
+    const [nm, c] = A[a] || [a, '#ccc']; const x = ag[a];
+    const fresh = x && lastAg[a] != null && lastAg[a] !== x[0];
+    if (x) lastAg[a] = x[0];
+    const kc = x ? (KIND[x[1]] || KIND.info)[1] : '#5b636e';
+    const body = x && x[2] ? `${logo(x[3])}<span class=tx>${esc(x[2].replace(BIDI, ''))}</span>${pills(x[4], 2)}${rt(x[0])}`
+      : old[a] && old[a][1] ? `<span class=tx>${esc(old[a][1])}</span>${rt(old[a][0])}` : `<span class="tx mut">${esc(nm)} · nessuna azione ancora</span>`;
+    return `<div class="arow${fresh ? ' flash' : ''}" style="--kc:${kc}" title="${esc(nm + (x && x[5] ? ' · ' + x[5] : ''))}"><span class=ic style="background:${c}1a;color:${c}">${svg(a)}</span>${body}</div>`;
+  }).join('');
+  return [k, `<div class=card><h3>${title}<span class=cnt>${list.length} agenti</span></h3>${rows}</div>`];
 }
-function feedCard(list, title, note) {
-  const html = list && list.length ? list.map(a => { const [id, ts, st, msg] = a; const c = (A[st] || ['', '#9aa4b2'])[1]; const nw = !firstFeed && !seen.has(id);
-    return `<div class="fl${nw ? ' new' : ''}"><span class=ts>${hm(ts)}</span><span class=tag style="color:${c};background:${c}17">${esc(st).toUpperCase()}</span><span class=msg>${esc(msg)}</span></div>`; }).join('')
-    : '<div class=empty>Nessuna attività ancora.</div>';
-  return `<div class=card><h3>${title}<span class=cnt>${note || ''}</span></h3><div class=feed>${html}</div></div>`;
+function feedCard(k, lines, title, note) {
+  const body = lines.length ? lines.map(x => lineHTML(x, false)).join('') : '<div class=empty>Nessuna attività ancora.</div>';
+  const html = `<div class="card feedcard"><h3>${title}<span class=cnt>${note || ''}</span></h3><div class=feed>${body}</div></div>`;
+  return [k, html, {feed: el => {
+    const box = el.querySelector('.feed'); const ids = new Set(lines.map(lk));
+    const have = new Set([...box.querySelectorAll('.ln')].map(n => n.dataset.id));
+    if (![...have].some(h => ids.has(h))) { box.innerHTML = body; return; }   // first data / format switch: no animation
+    box.querySelectorAll('.empty').forEach(n => n.remove());
+    const num = h => +String(h).replace(/^o/, '');
+    const add = lines.filter(x => !have.has(lk(x))).sort((a, b) => a[0] - b[0]);
+    for (const x of add) {   // insert keeping id order (newest on top), slide-in
+      const t = document.createElement('template'); t.innerHTML = lineHTML(x, true); const n = t.content.firstElementChild;
+      const after = [...box.children].find(c => num(c.dataset.id) < x[0]);
+      box.insertBefore(n, after || null);
+    }
+    box.querySelectorAll('.ln').forEach(n => { if (!ids.has(n.dataset.id)) n.remove(); });
+  }}];
 }
-function positionsCard(ps, showBook) {
-  return `<div class=card><h3>Posizioni aperte<span class=cnt>${ps.length ? ps.length + ' aperte' : ''}</span></h3>${ps.length ? ps.map(p => {
+const lastPos = {};
+function positionsCard(k, ps, showBook) {
+  const rows = ps.map(p => {
     const r = p.cur ? (p.cur / p.fill - 1) * 100 : null, val = r == null ? null : p.cost * (1 + r / 100);
-    return `<div class=prow><div class=pl><b>${esc(p.sym)}</b><small>${showBook ? esc(BOOK_NAME[p.book] || p.book) + ' · ' : ''}dalle ${dt(p.ets)}</small>
-      <div class=pm>ingresso ${px(p.ref)} → ${px(p.cur)} · stop ${px(p.stop)}</div></div>
-      <div class=pr><span class="pp ${cls(r)}">${r == null ? '–' : sg(r) + f(r, 1) + '%'}</span><small>${E(p.cost)}${val == null ? '' : ' → ' + E(val)}</small></div></div>`; }).join('')
-    : '<div class=empty>Nessuna posizione aperta in questo momento.</div>'}</div>`;
+    const id = p.book + '|' + p.sym, pr = lastPos[id]; lastPos[id] = r;
+    const fl = pr != null && r != null && Math.abs(r - pr) >= 0.05 ? (r > pr ? ' up' : ' dn') : '';
+    return `<div class="prow${fl}">${logo(p.sym)}<div class=pl><div class=pt><b>${esc((p.sym || '').replace(BIDI, ''))}</b><small>${showBook ? esc((BOOK_NAME[p.book] || p.book).split(' · ')[0]) + ' · ' : ''}${rt(p.ets)}</small></div>
+      <div class=pm>${px(p.ref)} → ${px(p.cur)} · stop ${px(p.stop)}</div></div>
+      <div class=pr><span class="pp ${cls(r)}">${r == null ? '–' : sg(r) + f(r, 1) + '%'}</span><small>${E(p.cost)}${val == null ? '' : ' → ' + E(val)}</small></div></div>`; }).join('');
+  return [k, `<div class=card><h3>Posizioni aperte<span class=cnt>${ps.length ? ps.length + (ps.length === 1 ? ' aperta' : ' aperte') + ' · prezzi ogni 5 s' : ''}</span></h3>${ps.length ? rows : '<div class=empty>Nessuna posizione aperta in questo momento.</div>'}</div>`];
 }
-function tradesCard(bs) {
+function tradesCard(k, bs) {
   const tr = (D.tr && D.tr.t || []).filter(t => !bs || bs.includes(t[0])).slice(0, 15);
-  return `<div class=card><h3>Ultimi trade chiusi</h3>${tr.length ? '<table><tr><th>Token</th><th>Uscita</th><th>PnL</th></tr>' + tr.map(t =>
-    `<tr><td>${esc(t[1])}<small>${esc(EXIT[t[5]] || t[5])}${bs && bs.length === 1 ? '' : ' · ' + esc(BOOK_NAME[t[0]] || t[0])}</small></td><td>${dt(t[2])}</td><td class=${cls(t[3])}>${sg(t[3])}${E(t[3])}<small>${sg(t[4])}${f(t[4], 1)}%</small></td></tr>`).join('') + '</table>'
-    : '<div class=empty>Nessun trade chiuso finora.</div>'}</div>`;
+  return [k, `<div class=card><h3>Ultimi trade chiusi</h3>${tr.length ? tr.map(t => { const kk = t[3] >= 0 ? 'tp' : (/stop/.test(t[5]) ? 'stop' : 'sell');
+    return `<div class=trow style="--kc:${KIND[kk][1]}">${logo(t[1])}<div class=pl><div class=pt><b>${esc((t[1] || '').replace(BIDI, ''))}</b><small>${esc(EXIT[t[5]] || t[5])}${bs && bs.length === 1 ? '' : ' · ' + esc((BOOK_NAME[t[0]] || t[0]).split(' · ')[0])}</small></div><div class=pm>${dt(t[2])}</div></div>
+      <div class=pr><span class="pp ${cls(t[3])}">${sg(t[4])}${f(t[4], 1)}%</span><small class=${cls(t[3])}>${sg(t[3])}${E(t[3])}</small></div></div>`; }).join('')
+    : '<div class=empty>Nessun trade chiuso finora.</div>'}</div>`];
 }
-function labCard(labs, bs) {
+function labCard(k, labs, bs) {
   const L = D.lab || {}; const m = L.m || {};
-  const rows = labs.map(l => { const x = m[l]; return `<div class=labrow><span class=ln>${esc(l)}</span><span class=lm>${x ? esc(x[1].replace(/^\[[^\]]+\]\s*/, '')) + `<span class=ts>${dt(x[0])}</span>` : '<span class=ts>in attesa di dati sufficienti</span>'}</span></div>`; }).join('');
+  const rows = labs.map(l => { const x = m[l]; return `<div class=labrow><span class=ln2>${esc(l)}</span><span class=lm>${x ? esc(x[1].replace(/^\[[^\]]+\]\s*/, '')) + `<span class=ts>${dt(x[0])}</span>` : '<span class=ts>in attesa di dati sufficienti</span>'}</span></div>`; }).join('');
   const ex = (L.ex || []).filter(e => !bs || bs.includes(e[1]) || bs.includes(e[3]));
   const et = ex.length ? '<table style="margin-top:8px"><tr><th>Esperimento</th><th>Book</th><th>Stato</th></tr>' + ex.map(e => { const s = SI[e[2]]; const [t, c] = Array.isArray(s) ? s : [s || e[2], ''];
     return `<tr><td>${esc(e[0])}</td><td>${esc(BOOK_NAME[e[1]] || e[1])}</td><td class="${c}">${esc(t)}</td></tr>`; }).join('') + '</table>' : '';
-  return `<div class=card><h3>Lab<span class=cnt>${ex.length ? ex.length + ' esperimenti' : ''}</span></h3>${rows}${et}</div>`;
+  return [k, `<div class=card><h3>Lab<span class=cnt>${ex.length ? ex.length + ' esperimenti' : ''}</span></h3>${rows}${et}</div>`];
 }
-function killsCard() {
+function killsCard(k) {
   const kr = Object.entries((D.lab && D.lab.kr) || {}); const mx = Math.max(1, ...kr.map(x => x[1]));
-  return `<div class=card><h3>Scartati dal Filter</h3>${kr.length ? '<table><tr><th>Regola</th><th>Token</th></tr>' + kr.map(([k, n]) =>
-    `<tr><td>${esc(KR[k] || k)}<div style="height:4px;border-radius:3px;margin-top:5px;width:${n / mx * 100}%;background:linear-gradient(90deg,#ff4d64,rgba(255,77,100,.3))"></div></td><td>${n}</td></tr>`).join('') + '</table>' : '<div class=empty>Ancora nessun token scartato.</div>'}</div>`;
+  return [k, `<div class=card><h3>Scartati dal Filter</h3>${kr.length ? '<table><tr><th>Regola</th><th>Token</th></tr>' + kr.map(([r, n]) =>
+    `<tr><td>${esc(KR[r] || r)}<div style="height:4px;border-radius:3px;margin-top:5px;width:${n / mx * 100}%;background:linear-gradient(90deg,#ff4d64,rgba(255,77,100,.3))"></div></td><td>${n}</td></tr>`).join('') + '</table>' : '<div class=empty>Ancora nessun token scartato.</div>'}</div>`];
 }
+function overshootNote(k, B) {
+  const [n, avg, worst] = B.ov; if (!n) return null;
+  return [k, `<div class=card><h3>Precisione delle uscite<span class=cnt>${n} uscite su stop/obiettivo</span></h3><div class=sub style="margin:0">
+    <span class=${cls(Math.round(avg * 10))}>${sg(avg)}${f(avg, 1)} punti</span><span class=neu style="font-weight:500;font-size:12.5px">in media rispetto alla soglia · peggiore ${sg(worst)}${f(worst, 1)}</span></div>
+    <div class=desc style="margin:6px 0 0">Quanto il prezzo di uscita è finito oltre lo stop (o l’obiettivo): più vicino a 0, meglio è.</div></div>`];
+}
+function allAgents() { return [...new Set(Object.keys(A).concat(Object.keys(D.ag2 || D.ag || {})))]; }
+function afterHero(k) { const el = document.querySelector(`[data-k="${k}"] .eq`); if (el) tween(el, k, +el.dataset.n, v => E(v)); }
 
 // ---------- views ----------
 function renderOverview() {
@@ -256,44 +380,51 @@ function renderOverview() {
     const eq = bs.reduce((a, b) => a + bk(b).eq, 0), st = s0 * bs.length, p = (eq / st - 1) * 100;
     const ww = bs.reduce((a, b) => a + bk(b).w, 0), ll = bs.reduce((a, b) => a + bk(b).l, 0), op = ps.filter(x => bs.includes(x.book)).length;
     return `<div class=eco data-t="${k}"><div class=en><b>${esc(e[0])}</b><small>${bs.length > 1 ? bs.length + ' portafogli · ' : ''}V/P ${ww}/${ll} · ${op} aperte</small></div>${spark(totalSeries(bs), eq >= st)}<div class=ev>${E(eq, 0)}<small class=${cls(p)}>${sg(p)}${f(p)}%</small></div></div>`; }).join('');
-  const labs = liveLabs();
-  $('view').innerHTML = hero(`Equity totale · ${mb.length} portafogli`, eqT, pnl, pct, w, l,
-      [['Chiusi', cl], ['Aperte', ps.length], ['Partenza', '€' + f(mb.length * 1000, 0)]], 'ch_all')
-    + `<div class=card><h3>Portafogli<span class=cnt>tocca per aprire</span></h3>${ecoRows}</div>`
-    + agentsCard(liveAgents(Object.keys(A)), 'Desk')
-    + positionsCard(ps.filter(p => mb.includes(p.book)), true)
-    + feedCard(D.feed && D.feed.f, 'Logger · attività live', 'tutti gli agenti')
-    + labCard(labs, null) + tradesCard(mb);
-  document.querySelectorAll('.eco').forEach(x => x.onclick = () => setTab(x.dataset.t));
+  const hk = 'o_hero';
+  patch([
+    heroCard(hk, `Equity totale · ${mb.length} portafogli`, eqT, pnl, pct, w, l, [['Chiusi', cl], ['Aperte', ps.length], ['Partenza', '€' + f(mb.length * 1000, 0)]]),
+    chartCard('ch_all'),
+    positionsCard('o_pos', ps.filter(p => mb.includes(p.book)), true),
+    feedCard('o_feed', feedLines(null), 'Attività live', 'tutti gli agenti'),
+    agentsCard('o_ag', liveAgents(allAgents()), 'Stato degli agenti'),
+    ['o_eco', `<div class=card><h3>Portafogli<span class=cnt>tocca per aprire</span></h3>${ecoRows}</div>`, {after: el => el.querySelectorAll('.eco').forEach(x => x.onclick = () => setTab(x.dataset.t))}],
+    tradesCard('o_tr', mb), labCard('o_lab', liveLabs(), null), killsCard('o_kr')]);
+  afterHero(hk);
   const ser = totalSeries(mb); const up = !ser.length || ser[ser.length - 1][1] >= startT;
   chart('ch_all', [['Totale', ser, up ? '#1fe08a' : '#ff4d64', true]], mb.length * 1000);
 }
 function renderEco(e) {
-  const bs = booksOf(e); if (!bs.length) { $('view').innerHTML = '<div class=card><div class=empty>Nessun portafoglio in questo ecosistema.</div></div>'; return; }
+  const bs = booksOf(e); if (!bs.length) { patch([['none_' + e, '<div class=card><div class=empty>Nessun portafoglio in questo ecosistema.</div></div>']]); return; }
   if (!sub[e] || !bs.includes(sub[e])) sub[e] = bs[0];
   const b = sub[e], B = bk(b), s0 = D.sum.s0, ser = eqs[b] || [];
   const ps = positions().filter(p => p.book === b);
   const name = B.lab ? '🧪 ' + b : (BOOK_NAME[b] || b);
   const chips = bs.length > 1 ? '<div class=chips>' + bs.map(x => `<button class="chip${x === b ? ' on' : ''}" data-b="${x}">${esc(bk(x).lab ? '🧪 ' + x : (BOOK_NAME[x] || x).split(' · ')[0])}</button>`).join('') + '</div>' : '';
-  $('view').innerHTML = `<div class=desc>${ECO[e] ? ECO[e].desc : ''}${B.lab ? '<br>🧪 ' + esc(B.lab) : ''}</div>` + chips
-    + hero('Equity paper · ' + esc(name), B.eq, B.eq - s0, B.pct, B.w, B.l, [['Win rate', B.wr == null ? '–' : f(B.wr, 0) + '%'], ['Max DD', `<span class=${B.dd < 0 ? 'neg' : 'neu'}>${f(B.dd, 1)}%</span>`], ['Chiusi', B.closed]], 'ch_' + e)
-    + overshootNote(B) + positionsCard(ps, false) + agentsCard(liveAgents(ECO[e] ? ECO[e].agents : []), 'Agenti di questo portafoglio')
-    + feedCard(D['feed/' + e] && D['feed/' + e].f, 'Attività live', esc(D.sum.eco[e][0]))
-    + labCard(ECO[e] ? ECO[e].labs : [], bs) + tradesCard([b]) + (e === 'prudente' || e === 'aggressivo' ? killsCard() : '');
-  document.querySelectorAll('.chip').forEach(c => c.onclick = () => { sub[e] = c.dataset.b; haptic(); render(); });
-  chart('ch_' + e, [[name, ser, B.eq >= s0 ? '#1fe08a' : '#ff4d64', true]], 1000);
+  const p = e + '_' + b + '_', hk = p + 'hero', ck = 'ch_' + e + '_' + b.replace(/\W/g, '');
+  patch([
+    [p + 'desc', `<div class=intro><div class=desc>${ECO[e] ? ECO[e].desc : 'Portafoglio paper aggiunto di recente: stesse regole di sicurezza, dati live dal desk.'}${B.lab ? '<br>🧪 ' + esc(B.lab) : ''}</div>${chips}</div>`,
+      {after: el => el.querySelectorAll('.chip').forEach(c => c.onclick = () => { sub[e] = c.dataset.b; haptic(); render(); })}],
+    heroCard(hk, 'Equity paper · ' + esc(name), B.eq, B.eq - s0, B.pct, B.w, B.l, [['Win rate', B.wr == null ? '–' : f(B.wr, 0) + '%'], ['Max DD', `<span class=${B.dd < 0 ? 'neg' : 'neu'}>${f(B.dd, 1)}%</span>`], ['Chiusi', B.closed]]),
+    chartCard(ck),
+    positionsCard(p + 'pos', ps, false),
+    feedCard(p + 'feed', feedLines(e), 'Attività live', esc(D.sum.eco[e][0])),
+    agentsCard(p + 'ag', liveAgents(ECO[e] ? ECO[e].agents : allAgents()), 'Stato degli agenti'),
+    overshootNote(p + 'ov', B),
+    tradesCard(p + 'tr', [b]), labCard(p + 'lab', ECO[e] ? ECO[e].labs : [], bs),
+    e === 'prudente' || e === 'aggressivo' || e === 'pump' ? killsCard(p + 'kr') : null].filter(Boolean));
+  afterHero(hk);
+  chart(ck, [[name, ser, B.eq >= s0 ? '#1fe08a' : '#ff4d64', true]], 1000);
 }
-function overshootNote(B) {
-  const [n, avg, worst] = B.ov; if (!n) return '';
-  return `<div class=card><h3>Precisione delle uscite<span class=cnt>${n} uscite su stop/obiettivo</span></h3><div class=sub style="margin:0">
-    <span class=${cls(Math.round(avg * 10))}>${sg(avg)}${f(avg, 1)} punti</span><span class=neu style="font-weight:500;font-size:12.5px">in media rispetto alla soglia · peggiore ${sg(worst)}${f(worst, 1)}</span></div>
-    <div class=desc style="margin:6px 0 0">Quanto il prezzo di uscita è finito oltre lo stop (o l’obiettivo): più vicino a 0, meglio è.</div></div>`;
+function setTab(t) {
+  if (t === tab) return; tab = t; localStorage.setItem('cx_tab', t); haptic();
+  const v = $('view'); v.classList.remove('swap'); void v.offsetWidth; v.classList.add('swap'); setTimeout(() => v.classList.remove('swap'), 450);
+  render(); window.scrollTo({top: 0});
 }
-function setTab(t) { tab = t; localStorage.setItem('cx_tab', t); haptic(); render(); window.scrollTo({top: 0}); }
 function renderTabs() {
   const tabs = [['overview', 'Panoramica', null]].concat(Object.entries(D.sum.eco).map(([k, e]) => { const bs = e[1].filter(b => D.sum.b[b]);
     const eq = bs.reduce((a, b) => a + bk(b).eq, 0), st = D.sum.s0 * bs.length; return [k, e[0], st ? (eq / st - 1) * 100 : null]; }));
-  $('tabs').innerHTML = tabs.map(([k, l, p]) => `<button class="tab${k === tab ? ' on' : ''}" data-t="${k}">${esc(l)}${p == null ? '' : `<span class="tp ${cls(Math.round(p * 10))}">${sg(p)}${f(p, 1)}%</span>`}</button>`).join('');
+  const html = tabs.map(([k, l, p]) => `<button class="tab${k === tab ? ' on' : ''}" data-t="${k}">${esc(l)}${p == null ? '' : `<span class="tp ${cls(Math.round(p * 10))}">${sg(p)}${f(p, 1)}%</span>`}</button>`).join('');
+  const el = $('tabs'); if (el._h === html) return; el._h = html; el.innerHTML = html;
   document.querySelectorAll('.tab').forEach(x => x.onclick = () => setTab(x.dataset.t));
   const on = document.querySelector('.tab.on'); if (on && on.scrollIntoViewIfNeeded) on.scrollIntoViewIfNeeded(false);
 }
@@ -301,17 +432,13 @@ function render() {
   renderQueued = false;
   if (!D.sum) return;
   if (tab !== 'overview' && !D.sum.eco[tab]) tab = 'overview';
-  const sc = window.scrollY, feedEl = document.querySelector('.feed'), fsc = feedEl ? feedEl.scrollTop : 0;
   renderTabs();
   if (tab === 'overview') renderOverview(); else renderEco(tab);
-  const fe = document.querySelector('.feed'); if (fe) fe.scrollTop = fsc;
-  window.scrollTo(0, sc);
-  for (const k of Object.keys(D)) if (k === 'feed' || k.startsWith('feed/')) (D[k].f || []).forEach(a => seen.add(a[0]));
-  firstFeed = false;
-  $('foot').innerHTML = `Solo paper trading · ogni portafoglio parte da €1.000 virtuali · cambio fisso 1 EUR = ${f(FX(), 4)} USD<br>nessun wallet, nessuna chiave, nessun ordine reale`;
+  const foot = `Solo paper trading · ogni portafoglio parte da €1.000 virtuali · cambio fisso 1 EUR = ${f(FX(), 4)} USD<br>nessun wallet, nessuna chiave, nessun ordine reale`;
+  if ($('foot')._h !== foot) { $('foot')._h = foot; $('foot').innerHTML = foot; }
   setLive();
 }
-function queueRender() { if (!renderQueued) { renderQueued = true; setTimeout(render, 120); } }
+function queueRender() { if (!renderQueued) { renderQueued = true; setTimeout(render, 80); } }
 
 // ---------- boot ----------
 (function boot() {
