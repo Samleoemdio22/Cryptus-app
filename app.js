@@ -30,13 +30,14 @@ const ICON={Scout:"<circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/>",F
  Lab:"<path d='M9 3h6M10 3v6L4.5 18.5A2 2 0 006.2 21h11.6a2 2 0 001.7-2.5L14 9V3'/><path d='M7 15h10'/>",Sentinel:"<path d='M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z'/><circle cx='12' cy='12' r='3'/>",
  Hunter:"<circle cx='12' cy='12' r='8'/><path d='M12 2v4M12 18v4M2 12h4M18 12h4'/>",Mirror:"<rect x='8' y='8' width='12' height='12' rx='2'/><path d='M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2'/>"};
 const BOOK_NAME={A_spec:'Prudente A · stop −6%',B_wide:'Prudente B · stop −12%',C_spec_4h:'Prudente C · time stop 4h',D_wide_noregime:'Prudente D · senza regime',
- X_aggressive:'Aggressivo',X_aggr_sentinel:'Aggressivo + Sentinel',S_scalp:'Scalping',P_pump:'Pump organici · impulso ≥ 65'};
+ X_aggressive:'Aggressivo',X_aggr_sentinel:'Aggressivo + Sentinel',S_scalp:'Scalping',P_pump:'Pump organici · impulso ≥ 65',E_explore:'Esploratore · token più giovani e piccoli'};
 const ECO={
  prudente:{agents:['Regime','Scout','Filter','Analyst','Executor','Risk','Lab','Logger'],labs:['Lab Segnali','Lab Uscite'],desc:'Filtri rigorosi e punteggio ≥ 70. Quattro varianti di uscita sugli stessi segnali: A stop −6%, B stop −12%, C con time stop 4h, D come B ma senza pausa di mercato.'},
  aggressivo:{agents:['Scout','Filter','Analyst','Executor','Risk','Lab'],labs:['Lab Segnali','Lab Uscite'],desc:'Stessi controlli di sicurezza, filtri “morbidi” più larghi e punteggio ≥ 60: più trade, più rischio.'},
  sentinel:{agents:['Filter','Analyst','Executor','Sentinel','Risk','Lab'],labs:['Lab Sentinel'],desc:'Gemello dell’Aggressivo con Sentinel: se vede segni di dump vende metà, se è grave esce del tutto. Test A/B.'},
  scalping:{agents:['Filter','Scalp','Executor','Risk','Lab'],labs:['Lab Scalping'],desc:'Entrate veloci su forte spinta a 5 minuti: obiettivo +4,5%, stop −3%, massimo 20 minuti. Costi inclusi.'},
  pump:{agents:['Scout','Filter','Analyst','Executor','Risk','Lab'],labs:['Lab Pump'],desc:'Entra sui pump organici precoci: impulso ≥ 65, volume finto < 30, niente firme da bot, tutti i filtri di sicurezza. Stop −7%, trailing 6% dopo +10%, massimo 50 minuti. Size 8%.'},
+ esploratore:{agents:['Scout','Filter','Analyst','Executor','Risk'],labs:[],desc:'Esplora token più giovani e più piccoli di quelli che guardano gli altri: da 5 minuti di vita e da $100k di valore. Stessi controlli di sicurezza, punteggio ≥ 60, puntate piccole del 4%. Stop −6%, trailing 5% dopo +8%, massimo 30 minuti. Serve a capire se i paletti degli altri ci fanno perdere occasioni.'},
  copy:{agents:['Hunter','Mirror','Filter','Executor','Sentinel','Risk','Lab'],labs:['Lab Copy'],desc:'Hunter cerca wallet bravi, Mirror copia i loro acquisti (con ritardo e slippage simulati), stessi filtri di sicurezza.'}};
 const EXIT={leader_sell:'wallet copiato ha venduto',sentinel_warning:'Sentinel (warning)',sentinel_critical:'Sentinel (critico)',stop_loss:'stop loss',trail_stop:'trailing stop',time_stop:'time stop',take_profit:'take profit',liquidity_collapse:'liquidità crollata'};
 const KR={pumped_h1:'Già +80% in 1h',low_liquidity:'Liquidità < $20k',liq_to_mcap:'Liq/mcap < 5%',unverifiable:'Non verificabile',rugged_flag:'Segnalato rug',mint_authority:'Mint non revocata',
@@ -258,6 +259,37 @@ function tween(el, key, to, fmt) {
 }
 
 const SCROLL_ROWS = 5;
+// layout-pixel bottom of an element relative to the scroll box (transforms / visual zoom ignored)
+function rowBottom(row, box) {
+  let top = 0, n = row;
+  while (n && n !== box) {
+    top += n.offsetTop;
+    const p = n.offsetParent;
+    if (!p || p === n) break;
+    n = p;
+  }
+  if (n === box) return top + row.offsetHeight;
+  const br = row.getBoundingClientRect(), bb = box.getBoundingClientRect();
+  const scale = (bb.height && box.clientHeight) ? bb.height / box.clientHeight
+              : (bb.width && box.clientWidth) ? bb.width / box.clientWidth : 1;
+  return (br.bottom - bb.top) / (scale || 1) + box.scrollTop;
+}
+function sizeAllScrolls() {
+  document.querySelectorAll('.scroll5').forEach(b => { if (b._cxScr) sizeScroll(b, b._cxScr); });
+}
+function watchScrollLayout() {
+  if (watchScrollLayout.on) return;
+  watchScrollLayout.on = true;
+  const kick = () => sizeAllScrolls();
+  window.addEventListener('resize', kick);
+  if (window.visualViewport) visualViewport.addEventListener('resize', kick);
+  if (tg && tg.onEvent) try { tg.onEvent('viewportChanged', kick); } catch (e) {}
+  if (document.fonts) {
+    document.fonts.ready.then(kick);
+    if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', kick);
+  }
+  [80, 300, 1000].forEach(ms => setTimeout(kick, ms));
+}
 function sizeScroll(box, sel) {
   if (!box) return;
   const rows = [...box.querySelectorAll(sel)];
@@ -267,24 +299,47 @@ function sizeScroll(box, sel) {
     box.classList.add('at-end');
     return;
   }
-  let h = 0;
-  for (let i = 0; i < SCROLL_ROWS; i++) h += rows[i].getBoundingClientRect().height;
+  // distance from the top of the list to the bottom of row 5 (gaps included, slide-in transforms ignored);
+  // .scroll5 is position:relative so offsetTop is relative to the list
+  const r5 = rows[SCROLL_ROWS - 1];
+  let h = rowBottom(r5, box);
+  const one = Math.max(0, ...rows.slice(0, SCROLL_ROWS).map(r => r.offsetHeight || 0));
+  if (!(h > 0) || (one && h > one * SCROLL_ROWS * 1.6)) h = one * SCROLL_ROWS;   // safety clamp
   box.style.maxHeight = Math.ceil(h) + 'px';
+  // grow a pixel or two if subpixels still clip row 5 after the cap is applied
+  const still = rowBottom(r5, box);
+  if (still > box.clientHeight + 1) box.style.maxHeight = Math.ceil(still) + 'px';
   const more = box.scrollHeight > box.clientHeight + 1;
   box.classList.toggle('can-scroll', more);
   box.classList.toggle('at-end', !more || box.scrollTop + box.clientHeight >= box.scrollHeight - 2);
 }
+function observeScrollRows(box, sel) {
+  if (!box._ro) return;
+  const rows = [...box.querySelectorAll(sel)].slice(0, SCROLL_ROWS);
+  if (box._roRows) for (const r of box._roRows) { try { box._ro.unobserve(r); } catch (e) {} }
+  box._roRows = rows;
+  rows.forEach(r => { try { box._ro.observe(r); } catch (e) {} });
+}
 function attachScroll(box, sel) {
   if (!box) return;
-  sizeScroll(box, sel);
-  if (box._cxScr) { box._cxScr = sel; return; }
   box._cxScr = sel;
-  box.addEventListener('scroll', () => {
-    box.classList.toggle('at-end', box.scrollTop + box.clientHeight >= box.scrollHeight - 2);
-  }, {passive: true});
-  if (!attachScroll._fonts && document.fonts && document.fonts.ready) {
-    attachScroll._fonts = true;
-    document.fonts.ready.then(() => document.querySelectorAll('.scroll5').forEach(b => sizeScroll(b, b._cxScr || '.ln, .arow, .trow')));
+  if (!box._ro && window.ResizeObserver) {
+    // re-measure when the card OR the first rows change size (fonts, Telegram expand, rotation).
+    // Observing only the card is not enough: a stale max-height pins the card, so a later
+    // font/text shrink (the iPhone ~10-row case) would never fire.
+    let raf = 0;
+    const ro = new ResizeObserver(() => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => sizeScroll(box, box._cxScr)); });
+    box._ro = ro;
+    ro.observe(box.parentElement || box);
+  }
+  sizeScroll(box, sel);
+  observeScrollRows(box, sel);
+  watchScrollLayout();
+  if (!box._scrEv) {
+    box._scrEv = true;
+    box.addEventListener('scroll', () => {
+      box.classList.toggle('at-end', box.scrollTop + box.clientHeight >= box.scrollHeight - 2);
+    }, {passive: true});
   }
 }
 function keepScroll(box, fn) {
@@ -409,7 +464,7 @@ function positionsCard(k, ps, showBook) {
     return `<div class="prow${fl}">${logo(p.sym)}<div class=pl><div class=pt><b>${esc((p.sym || '').replace(BIDI, ''))}</b><small>${showBook ? esc((BOOK_NAME[p.book] || p.book).split(' · ')[0]) + ' · ' : ''}${rt(p.ets)}</small></div>
       <div class=pm>${px(p.ref)} → ${px(p.cur)} · stop ${px(p.stop)}</div></div>
       <div class=pr><span class="pp ${cls(r)}">${r == null ? '–' : sg(r) + f(r, 1) + '%'}</span><small>${E(p.cost)}${val == null ? '' : ' → ' + E(val)}</small></div></div>`; }).join('');
-  return [k, `<div class=card><h3>Posizioni aperte<span class=cnt>${ps.length ? ps.length + (ps.length === 1 ? ' aperta' : ' aperte') + ' · prezzi ogni 5 s' : ''}</span></h3>${ps.length ? rows : '<div class=empty>Nessuna posizione aperta in questo momento.</div>'}</div>`];
+  return [k, `<div class=card><h3>Posizioni aperte<span class=cnt>${ps.length ? ps.length + (ps.length === 1 ? ' aperta' : ' aperte') + ' · prezzi ogni 2 s' : ''}</span></h3>${ps.length ? rows : '<div class=empty>Nessuna posizione aperta in questo momento.</div>'}</div>`];
 }
 function tradesCard(k, bs) {
   const tr = (D.tr && D.tr.t || []).filter(t => !bs || bs.includes(t[0])).slice(0, 15);
@@ -482,7 +537,7 @@ function renderEco(e) {
     agentsCard(p + 'ag', liveAgents(ECO[e] ? ECO[e].agents : allAgents()), 'Stato degli agenti'),
     overshootNote(p + 'ov', B),
     tradesCard(p + 'tr', [b]), labCard(p + 'lab', ECO[e] ? ECO[e].labs : [], bs),
-    e === 'prudente' || e === 'aggressivo' || e === 'pump' ? killsCard(p + 'kr') : null].filter(Boolean));
+    e === 'prudente' || e === 'aggressivo' || e === 'pump' || e === 'esploratore' ? killsCard(p + 'kr') : null].filter(Boolean));
   afterHero(hk);
   chart(ck, [[name, ser, B.eq >= s0 ? '#1fe08a' : '#ff4d64', true]], 1000);
 }
