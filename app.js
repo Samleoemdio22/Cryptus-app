@@ -257,6 +257,64 @@ function tween(el, key, to, fmt) {
   requestAnimationFrame(step);
 }
 
+const SCROLL_ROWS = 5;
+function sizeScroll(box, sel) {
+  if (!box) return;
+  const rows = [...box.querySelectorAll(sel)];
+  if (rows.length <= SCROLL_ROWS) {
+    box.style.maxHeight = '';
+    box.classList.remove('can-scroll');
+    box.classList.add('at-end');
+    return;
+  }
+  let h = 0;
+  for (let i = 0; i < SCROLL_ROWS; i++) h += rows[i].getBoundingClientRect().height;
+  box.style.maxHeight = Math.ceil(h) + 'px';
+  const more = box.scrollHeight > box.clientHeight + 1;
+  box.classList.toggle('can-scroll', more);
+  box.classList.toggle('at-end', !more || box.scrollTop + box.clientHeight >= box.scrollHeight - 2);
+}
+function attachScroll(box, sel) {
+  if (!box) return;
+  sizeScroll(box, sel);
+  if (box._cxScr) { box._cxScr = sel; return; }
+  box._cxScr = sel;
+  box.addEventListener('scroll', () => {
+    box.classList.toggle('at-end', box.scrollTop + box.clientHeight >= box.scrollHeight - 2);
+  }, {passive: true});
+  if (!attachScroll._fonts && document.fonts && document.fonts.ready) {
+    attachScroll._fonts = true;
+    document.fonts.ready.then(() => document.querySelectorAll('.scroll5').forEach(b => sizeScroll(b, b._cxScr || '.ln, .arow, .trow')));
+  }
+}
+function keepScroll(box, fn) {
+  if (!box) { fn(); return; }
+  const pin = box.scrollTop <= 2;
+  const top = box.scrollTop, h = box.scrollHeight;
+  const prev = box.style.scrollBehavior;
+  box.style.scrollBehavior = 'auto';
+  fn();
+  if (!pin) box.scrollTop = top + (box.scrollHeight - h);
+  box.style.scrollBehavior = prev;
+}
+function afterScroll(sel) {
+  return el => {
+    const box = el.querySelector('.scroll5');
+    if (box) { box._h = box.innerHTML; attachScroll(box, sel); }
+  };
+}
+function patchList(el, sel, inner, titleHtml) {
+  const h3 = el.querySelector('h3');
+  if (h3 && titleHtml != null) h3.innerHTML = titleHtml;
+  const box = el.querySelector('.scroll5');
+  if (!box) return;
+  if (box._h !== inner) {
+    keepScroll(box, () => { box.innerHTML = inner; });
+    box._h = inner;
+  }
+  attachScroll(box, sel);
+}
+
 // ---------- components ----------
 function chart(id, sets, base) {
   const cv = $(id); if (!cv || !window.Chart) return;
@@ -310,24 +368,36 @@ function agentsCard(k, list, title) {
       : old[a] && old[a][1] ? `<span class=tx>${esc(old[a][1])}</span>${rt(old[a][0])}` : `<span class="tx mut">${esc(nm)} · nessuna azione ancora</span>`;
     return `<div class="arow${fresh ? ' flash' : ''}" style="--kc:${kc}" title="${esc(nm + (x && x[5] ? ' · ' + x[5] : ''))}"><span class=ic style="background:${c}1a;color:${c}">${svg(a)}</span>${body}</div>`;
   }).join('');
-  return [k, `<div class=card><h3>${title}<span class=cnt>${list.length} agenti</span></h3>${rows}</div>`];
+  const titleHtml = `${title}<span class=cnt>${list.length} agenti</span>`;
+  return [k, `<div class=card><h3>${titleHtml}</h3><div class="scroll5 aglist">${rows}</div></div>`, {after: afterScroll('.arow'), feed: el => patchList(el, '.arow', rows, titleHtml)}];
 }
 function feedCard(k, lines, title, note) {
   const body = lines.length ? lines.map(x => lineHTML(x, false)).join('') : '<div class=empty>Nessuna attività ancora.</div>';
-  const html = `<div class="card feedcard"><h3>${title}<span class=cnt>${note || ''}</span></h3><div class=feed>${body}</div></div>`;
-  return [k, html, {feed: el => {
+  const titleHtml = `${title}<span class=cnt>${note || ''}</span>`;
+  const html = `<div class="card feedcard"><h3>${titleHtml}</h3><div class="scroll5 feed">${body}</div></div>`;
+  return [k, html, {after: afterScroll('.ln'), feed: el => {
+    const h3 = el.querySelector('h3');
+    if (h3) h3.innerHTML = titleHtml;
     const box = el.querySelector('.feed'); const ids = new Set(lines.map(lk));
     const have = new Set([...box.querySelectorAll('.ln')].map(n => n.dataset.id));
-    if (![...have].some(h => ids.has(h))) { box.innerHTML = body; return; }   // first data / format switch: no animation
+    if (![...have].some(h => ids.has(h))) {   // first data / format switch: no animation
+      keepScroll(box, () => { box.innerHTML = body; });
+      box._h = body;
+      attachScroll(box, '.ln');
+      return;
+    }
     box.querySelectorAll('.empty').forEach(n => n.remove());
     const num = h => +String(h).replace(/^o/, '');
     const add = lines.filter(x => !have.has(lk(x))).sort((a, b) => a[0] - b[0]);
-    for (const x of add) {   // insert keeping id order (newest on top), slide-in
-      const t = document.createElement('template'); t.innerHTML = lineHTML(x, true); const n = t.content.firstElementChild;
-      const after = [...box.children].find(c => num(c.dataset.id) < x[0]);
-      box.insertBefore(n, after || null);
-    }
-    box.querySelectorAll('.ln').forEach(n => { if (!ids.has(n.dataset.id)) n.remove(); });
+    keepScroll(box, () => {
+      for (const x of add) {   // insert keeping id order (newest on top), slide-in; keep scroll if user is down
+        const t = document.createElement('template'); t.innerHTML = lineHTML(x, true); const n = t.content.firstElementChild;
+        const after = [...box.children].find(c => num(c.dataset.id) < x[0]);
+        box.insertBefore(n, after || null);
+      }
+      box.querySelectorAll('.ln').forEach(n => { if (!ids.has(n.dataset.id)) n.remove(); });
+    });
+    attachScroll(box, '.ln');
   }}];
 }
 const lastPos = {};
@@ -343,10 +413,11 @@ function positionsCard(k, ps, showBook) {
 }
 function tradesCard(k, bs) {
   const tr = (D.tr && D.tr.t || []).filter(t => !bs || bs.includes(t[0])).slice(0, 15);
-  return [k, `<div class=card><h3>Ultimi trade chiusi</h3>${tr.length ? tr.map(t => { const kk = t[3] >= 0 ? 'tp' : (/stop/.test(t[5]) ? 'stop' : 'sell');
+  const inner = tr.length ? tr.map(t => { const kk = t[3] >= 0 ? 'tp' : (/stop/.test(t[5]) ? 'stop' : 'sell');
     return `<div class=trow style="--kc:${KIND[kk][1]}">${logo(t[1])}<div class=pl><div class=pt><b>${esc((t[1] || '').replace(BIDI, ''))}</b><small>${esc(EXIT[t[5]] || t[5])}${bs && bs.length === 1 ? '' : ' · ' + esc((BOOK_NAME[t[0]] || t[0]).split(' · ')[0])}</small></div><div class=pm>${dt(t[2])}</div></div>
       <div class=pr><span class="pp ${cls(t[3])}">${sg(t[4])}${f(t[4], 1)}%</span><small class=${cls(t[3])}>${sg(t[3])}${E(t[3])}</small></div></div>`; }).join('')
-    : '<div class=empty>Nessun trade chiuso finora.</div>'}</div>`];
+    : '<div class=empty>Nessun trade chiuso finora.</div>';
+  return [k, `<div class=card><h3>Ultimi trade chiusi</h3><div class="scroll5 trlist">${inner}</div></div>`, {after: afterScroll('.trow'), feed: el => patchList(el, '.trow', inner, 'Ultimi trade chiusi')}];
 }
 function labCard(k, labs, bs) {
   const L = D.lab || {}; const m = L.m || {};
