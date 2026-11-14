@@ -143,7 +143,7 @@ img.tk{background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.
 @media(max-width:380px){.eq{font-size:38px}.pnl .pv{font-size:18px}}
 
 /* ---------- v3: 5-row internal scroll ---------- */
-.scroll5{overflow-x:hidden;overflow-y:auto;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent}
+.scroll5{position:relative;overflow-x:hidden;overflow-y:auto;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent}
 .scroll5::-webkit-scrollbar{width:4px}
 .scroll5::-webkit-scrollbar-track{background:transparent}
 .scroll5::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:4px}
