@@ -148,3 +148,25 @@ img.tk{background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.
 .scroll5::-webkit-scrollbar-track{background:transparent}
 .scroll5::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:4px}
 .scroll5.can-scroll:not(.at-end){-webkit-mask-image:linear-gradient(#000 calc(100% - 24px),transparent);mask-image:linear-gradient(#000 calc(100% - 24px),transparent)}
+
+/* ---------- v5: performance strip above the book switcher ---------- */
+.stickyhead{position:sticky;top:0;z-index:5;margin:0 -12px 2px;padding:0;background:linear-gradient(var(--bg) 86%,transparent)}
+.stickyhead .tabs{position:static;top:auto;z-index:auto;margin:0;padding:4px 12px 10px;background:none}
+.perf{padding:2px 12px 0}
+.perf-tot{display:flex;align-items:baseline;gap:8px;padding:2px 2px 7px;min-width:0;cursor:pointer}
+.perf-k{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.05px;color:#9aa3ae;flex:none}
+.perf-eq{font-weight:800;font-size:16.5px;letter-spacing:-.4px;line-height:1.1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.perf-pct{margin-left:auto;flex:none;font-weight:700;font-size:12.5px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+.perf-pct.pos{background:var(--gd);color:var(--g);border-color:rgba(31,224,138,.22)}
+.perf-pct.neg{background:var(--rd);color:var(--r);border-color:rgba(255,77,100,.25)}
+.perf-pct.neu{color:var(--mut);border-color:var(--line2)}
+.perf-pills{display:flex;gap:6px;overflow-x:auto;margin:0 -12px;padding:0 12px 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.perf-pills::-webkit-scrollbar{display:none}
+.ppill{flex:none;display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:999px;border:1px solid var(--line2);background:var(--card2);color:#c9d0d8;font:600 12px Inter,system-ui,sans-serif;cursor:pointer;transition:border-color .2s,background .2s,color .2s;white-space:nowrap}
+.ppill.on{background:linear-gradient(180deg,rgba(31,224,138,.2),rgba(31,224,138,.07));color:var(--g);border-color:rgba(31,224,138,.4)}
+.ppill .pn{font-weight:600}
+.ppill .pp{font-weight:700;font-size:11.5px}
+.ppill .pp.pos{color:var(--g)}.ppill .pp.neg{color:var(--r)}.ppill .pp.neu{color:var(--mut)}
+.pdot{width:6px;height:6px;border-radius:50%;background:var(--g);box-shadow:0 0 6px rgba(31,224,138,.65);flex:none}
+.pdot[hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce){.ppill{transition:none}}
