@@ -225,3 +225,24 @@ img.tk{background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.
 .card.paused-card{border-style:dashed;border-color:rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01)),var(--card)}
 .eco.paused{opacity:.82}
 .eco.paused b:after{content:" in pausa";font-weight:700;font-size:10px;color:#9aa3ae;letter-spacing:.4px;text-transform:uppercase;margin-left:6px}
+/* ---------- v8: Meme | Major desk switch + Cryptus Major cards ---------- */
+.deskswitch{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin:0 0 10px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid var(--line)}
+.deskswitch button{display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 10px;border:0;border-radius:10px;background:transparent;color:var(--mut);font:700 13px Inter,system-ui,sans-serif;letter-spacing:.2px;cursor:pointer;transition:background .25s,color .25s,box-shadow .25s}
+.deskswitch button.on{color:var(--txt);background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.04));box-shadow:0 1px 0 rgba(255,255,255,.08) inset,0 6px 18px rgba(0,0,0,.35)}
+.deskswitch button[data-d=major].on{background:linear-gradient(180deg,rgba(167,139,250,.22),rgba(90,169,255,.08));box-shadow:0 0 0 1px rgba(167,139,250,.35) inset,0 6px 18px rgba(0,0,0,.35)}
+.deskswitch button[data-d=meme].on{background:linear-gradient(180deg,rgba(31,224,138,.18),rgba(31,224,138,.05));box-shadow:0 0 0 1px rgba(31,224,138,.32) inset,0 6px 18px rgba(0,0,0,.35)}
+.deskswitch .dsp{font:600 11.5px "JetBrains Mono",monospace;opacity:.95}.deskswitch .dsp:empty{display:none}
+.mxgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.mxb{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:9px 10px;min-width:0}
+.mxb .k,.mxs .k{font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.9px;font-weight:600}
+.mxs .k small{text-transform:none;letter-spacing:0;color:var(--mut2);font-weight:500;margin-left:4px}
+.mxb .v{font-size:17px;font-weight:800;margin:2px 0 1px}.mxb small{display:block;font-size:11px;color:var(--mut2);line-height:1.3}
+.mxs{border-top:1px solid var(--line);padding-top:9px;margin-top:9px}
+.mxr{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:3px 0}.mxr span{color:var(--mut)}.mxr b{font-weight:600;text-align:right}
+.mxws{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.mxw{position:relative;overflow:hidden;font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid var(--line2);color:#cdd4dc}
+.mxw i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,rgba(167,139,250,.30),rgba(167,139,250,.08));z-index:-1}.mxw{z-index:0}
+.sctab td small{font-size:10.5px}.sctab tr.tot td{border-top:1px solid var(--line2);font-weight:700}
+.sctab td,.sctab th{padding:6px 4px;font-size:12px}
+.stickyhead .deskswitch{margin:6px 12px 10px}
+.mut{color:var(--mut2)}.sctab td small{display:inline}
