@@ -52,7 +52,8 @@ const ECO={
  pump:{agents:['Scout','Filter','Analyst','Executor','Risk','Lab'],labs:['Lab Pump'],desc:'Entra sui pump organici precoci: impulso ≥ 65, volume finto < 30, niente firme da bot, tutti i filtri di sicurezza. Stop −7%, trailing 6% dopo +10%, massimo 50 minuti. Size 8%.'},
  esploratore:{agents:['Scout','Filter','Analyst','Executor','Risk'],labs:[],desc:'Esplora token più giovani e più piccoli di quelli che guardano gli altri: da 5 minuti di vita e da $100k di valore. Stessi controlli di sicurezza, punteggio ≥ 60, puntate piccole del 4%. Stop −6%, trailing 5% dopo +8%, massimo 30 minuti. Serve a capire se i paletti degli altri ci fanno perdere occasioni.'},
  balene:{agents:['Registratore','Cacciatore','Analista','Sentinella','Confluenza','Executor','Risk','Uscite'],labs:[],desc:'Segue i wallet “smart”: il Cacciatore trova chi è entrato presto sui token esplosi, l’Analista tiene solo i bravi (non bot, non sniper, non fortuna di un colpo), la Sentinella li segue in tempo reale. Si compra solo se 2+ wallet indipendenti entrano sullo stesso token entro 30 minuti. Size 6% (8% con 3+), stop −12%, trailing 10% dopo +20%, time stop 4h se non arriva a +10%, si esce quando le balene vendono. Prime 24-48 ore IN OMBRA: solo segnali, nessun trade.'},
- copy:{agents:['Hunter','Mirror','Filter','Executor','Sentinel','Risk','Lab'],labs:['Lab Copy'],desc:'Hunter cerca wallet bravi, Mirror copia i loro acquisti (con ritardo e slippage simulati), stessi filtri di sicurezza.'}};
+ copy:{agents:['Hunter','Mirror','Filter','Executor','Sentinel','Risk','Lab'],labs:['Lab Copy'],desc:'Hunter cerca wallet bravi, Mirror copia i loro acquisti (con ritardo e slippage simulati), stessi filtri di sicurezza.'},
+ paused:{agents:['Scout','Filter','Analyst','Executor','Risk','Lab'],labs:[],desc:'Portafogli messi in pausa: niente nuovi ingressi finché il mercato resta debole. Le posizioni già aperte seguono le regole di uscita. Si può riattivare in qualsiasi momento.'}};
 const EXIT={leader_sell:'wallet copiato ha venduto',whale_sell:'le balene hanno venduto',sentinel_warning:'Sentinel (warning)',sentinel_critical:'Sentinel (critico)',stop_loss:'stop loss',trail_stop:'trailing stop',time_stop:'time stop',take_profit:'take profit',liquidity_collapse:'liquidità crollata'};
 const KR={pumped_h1:'Già +80% in 1h',low_liquidity:'Liquidità < $20k',liq_to_mcap:'Liq/mcap < 5%',unverifiable:'Non verificabile',rugged_flag:'Segnalato rug',mint_authority:'Mint non revocata',
  freeze_authority:'Freeze non revocata',transfer_fee:'Tassa sul trasferimento',lp_not_locked:'LP non bloccata',top10_concentration:'Top-10 holder troppo alti',dev_holding:'Dev > 3%',dev_past_rugs:'Dev con rug passati',bundle_insiders:'Bundle/insider > 10%',fake_volume:'Volume finto (bot)',volume_bot:'Volume finto (bot)',bump_bot:'Volume finto (bot)',tape_quality:'Volume finto (bot)',wash_volume:'Volume finto (bot)'};
@@ -192,12 +193,36 @@ setInterval(setLive, 5000);
 
 // ---------- derived ----------
 function books() { return D.sum ? Object.keys(D.sum.b) : []; }
-function bk(b) { const v = D.sum.b[b]; return v && {eq: v[0], pct: v[1], w: v[2], l: v[3], closed: v[4], wr: v[5], dd: v[6], mult: v[7], lab: v[8], base: v[9], ov: v[10] || [0, null, null]}; }
+function bk(b) {
+  const v = D.sum && D.sum.b && D.sum.b[b];
+  if (!v) return null;
+  const fl = v[11] || {};
+  const pausedMap = D.sum.paused || {};
+  const exclMap = D.sum.excl || {};
+  return {eq: v[0], pct: v[1], w: v[2], l: v[3], closed: v[4], wr: v[5], dd: v[6], mult: v[7], lab: v[8], base: v[9], ov: v[10] || [0, null, null],
+    paused: !!(fl.paused || (b in pausedMap)), paused_reason: fl.paused_reason || pausedMap[b] || null,
+    duplicate_of: fl.duplicate_of || (typeof exclMap[b] === 'string' ? exclMap[b] : null),
+    exclude_from_totals: !!(fl.exclude_from_totals || (b in exclMap))};
+}
 function liveAgents(list) { const ag = D.ag2 || D.ag || {}; return list.filter(k => ag[k]); }   // only agents the desk actually runs
 function liveLabs() { return [...new Set(Object.keys(D.sum.eco || {}).flatMap(e => (ECO[e] && ECO[e].labs) || []))]; }
 function ecoOf(b) { const v = bk(b); const base = (v && v.base) || b; for (const [k, e] of Object.entries(D.sum.eco || {})) if (e[1].includes(base)) return k; return null; }
-function booksOf(e) { return books().filter(b => ecoOf(b) === e); }
-function mainBooks() { return books().filter(b => !bk(b).lab); }
+function booksOf(e) { if (e === 'paused') return pausedBooks(); return books().filter(b => ecoOf(b) === e); }
+function mainBooks() { return books().filter(b => bk(b) && !bk(b).lab); }
+function pausedBooks() { return mainBooks().filter(b => bk(b).paused); }
+function activeBooks() { return mainBooks().filter(b => !bk(b).paused); }
+function includedBooks() { return mainBooks().filter(b => !bk(b).exclude_from_totals); }
+function ecoPaused(k) { const bs = (D.sum.eco[k] && D.sum.eco[k][1] || []).filter(b => D.sum.b[b] && !bk(b).lab); return bs.length > 0 && bs.every(b => bk(b).paused); }
+function deskTotals() {
+  const t = D.sum && D.sum.tot, s0 = D.sum.s0;
+  if (t && t.length >= 3 && t[2]) return {eq: t[0], pct: t[1], n: t[2], start: t[3] != null ? t[3] : s0 * t[2]};
+  const bs = includedBooks(), eq = bs.reduce((a, b) => a + bk(b).eq, 0), start = s0 * bs.length;
+  return {eq, start, n: bs.length, pct: start ? (eq / start - 1) * 100 : 0};
+}
+function pauseReason() {
+  const rs = pausedBooks().map(b => bk(b).paused_reason).filter(Boolean);
+  return rs[0] || 'pausa';
+}
 function positions() { return (D.pos && D.pos.p || []).map(p => ({book: p[0], sym: p[1], ets: p[2], ref: p[3], fill: p[4], cost: p[5], stop: p[6], cur: p[7], peak: p[8], score: p[9]})); }
 function totalSeries(bs) {
   const ser = bs.map(b => eqs[b] || []).filter(s => s.length); if (!ser.length) return [];
@@ -517,27 +542,41 @@ function allAgents() { return [...new Set(Object.keys(A).concat(Object.keys(D.ag
 function afterHero(k) { const el = document.querySelector(`[data-k="${k}"] .eq`); if (el) tween(el, k, +el.dataset.n, v => E(v)); }
 
 // ---------- views ----------
+function ecoRow(k, e, bs, s0, ps, extra) {
+  if (!bs.length) return '';
+  const eq = bs.reduce((a, b) => a + bk(b).eq, 0), st = s0 * bs.length, p = (eq / st - 1) * 100;
+  const ww = bs.reduce((a, b) => a + bk(b).w, 0), ll = bs.reduce((a, b) => a + bk(b).l, 0), op = ps.filter(x => bs.includes(x.book)).length;
+  const dup = bs.some(b => bk(b).exclude_from_totals);
+  const note = extra || (dup ? 'duplicato, escluso dal totale' : (bs.length > 1 ? bs.length + ' portafogli · ' : '') + `V/P ${ww}/${ll} · ${op} aperte`);
+  return `<div class="eco${extra ? ' paused' : ''}${dup ? ' dup' : ''}" data-t="${k}"><div class=en><b>${esc(e[0])}</b><small>${esc(note)}</small></div>${spark(totalSeries(bs), eq >= st)}<div class=ev>${E(eq, 0)}<small class=${cls(p)}>${sg(p)}${f(p)}%</small></div></div>`;
+}
 function renderOverview() {
-  const mb = mainBooks(); const s0 = D.sum.s0;
-  const eqT = mb.reduce((a, b) => a + bk(b).eq, 0), startT = s0 * mb.length, pnl = eqT - startT, pct = startT ? (eqT / startT - 1) * 100 : 0;
-  const w = mb.reduce((a, b) => a + bk(b).w, 0), l = mb.reduce((a, b) => a + bk(b).l, 0), cl = mb.reduce((a, b) => a + bk(b).closed, 0);
+  const inc = includedBooks(), s0 = D.sum.s0, tot = deskTotals();
+  const eqT = tot.eq, startT = tot.start, pct = tot.pct, pnl = eqT - startT;
+  const w = inc.reduce((a, b) => a + bk(b).w, 0), l = inc.reduce((a, b) => a + bk(b).l, 0), cl = inc.reduce((a, b) => a + bk(b).closed, 0);
   const ps = positions();
-  const ecoRows = Object.entries(D.sum.eco).map(([k, e]) => { const bs = e[1].filter(b => D.sum.b[b]); if (!bs.length) return '';
-    const eq = bs.reduce((a, b) => a + bk(b).eq, 0), st = s0 * bs.length, p = (eq / st - 1) * 100;
-    const ww = bs.reduce((a, b) => a + bk(b).w, 0), ll = bs.reduce((a, b) => a + bk(b).l, 0), op = ps.filter(x => bs.includes(x.book)).length;
-    return `<div class=eco data-t="${k}"><div class=en><b>${esc(e[0])}</b><small>${bs.length > 1 ? bs.length + ' portafogli · ' : ''}V/P ${ww}/${ll} · ${op} aperte</small></div>${spark(totalSeries(bs), eq >= st)}<div class=ev>${E(eq, 0)}<small class=${cls(p)}>${sg(p)}${f(p)}%</small></div></div>`; }).join('');
+  const activeRows = Object.entries(D.sum.eco).filter(([k]) => !ecoPaused(k)).map(([k, e]) => {
+    const bs = e[1].filter(b => D.sum.b[b] && !bk(b).lab); return ecoRow(k, e, bs, s0, ps);
+  }).join('');
+  const pb = pausedBooks();
+  const pauseRows = pb.length ? pb.map(b => {
+    const e = ecoOf(b), ev = (e && D.sum.eco[e]) || [shortBook(b), [b]];
+    const reason = bk(b).paused_reason || pauseReason();
+    return ecoRow('paused', ev, [b], s0, ps, 'in pausa · ' + reason).replace('data-t="paused"', 'data-t="paused" data-b="' + b + '"');
+  }).join('') : '';
   const hk = 'o_hero';
   patch([
-    heroCard(hk, `Equity totale · ${mb.length} portafogli`, eqT, pnl, pct, w, l, [['Chiusi', cl], ['Aperte', ps.length], ['Partenza', '€' + f(mb.length * 1000, 0)]]),
+    heroCard(hk, `Equity totale · ${tot.n} portafogli`, eqT, pnl, pct, w, l, [['Chiusi', cl], ['Aperte', ps.length], ['Partenza', '€' + f(tot.n * 1000, 0)]]),
     chartCard('ch_all'),
-    positionsCard('o_pos', ps.filter(p => mb.includes(p.book)), true),
+    ['o_eco', `<div class=card><h3>Portafogli attivi<span class=cnt>tocca per aprire</span></h3>${activeRows || '<div class=empty>Nessun portafoglio attivo.</div>'}</div>`, {after: el => el.querySelectorAll('.eco').forEach(x => x.onclick = () => setTab(x.dataset.t))}],
+    pauseRows ? ['o_pause', `<div class="card paused-card"><h3>In pausa<span class=cnt>niente nuovi ingressi</span></h3><div class=desc style="margin:0 0 8px">${esc(pauseReason())}. Le posizioni già aperte seguono le regole di uscita.</div>${pauseRows}</div>`, {after: el => el.querySelectorAll('.eco').forEach(x => x.onclick = () => { if (x.dataset.b) sub.paused = x.dataset.b; setTab('paused'); })}] : null,
+    positionsCard('o_pos', ps.filter(p => inc.includes(p.book) || pausedBooks().includes(p.book)), true),
     feedCard('o_feed', feedLines(null), 'Attività live', 'tutti gli agenti'),
     agentsCard('o_ag', liveAgents(allAgents()), 'Stato degli agenti'),
-    ['o_eco', `<div class=card><h3>Portafogli<span class=cnt>tocca per aprire</span></h3>${ecoRows}</div>`, {after: el => el.querySelectorAll('.eco').forEach(x => x.onclick = () => setTab(x.dataset.t))}],
-    tradesCard('o_tr', mb), labCard('o_lab', liveLabs(), null), killsCard('o_kr')]);
+    tradesCard('o_tr', inc.concat(pb)), labCard('o_lab', liveLabs(), null), killsCard('o_kr')].filter(Boolean));
   afterHero(hk);
-  const ser = totalSeries(mb); const up = !ser.length || ser[ser.length - 1][1] >= startT;
-  chart('ch_all', [['Totale', ser, up ? '#1fe08a' : '#ff4d64', true]], mb.length * 1000);
+  const ser = totalSeries(inc); const up = !ser.length || ser[ser.length - 1][1] >= startT;
+  chart('ch_all', [['Totale', ser, up ? '#1fe08a' : '#ff4d64', true]], startT);
 }
 function renderEco(e) {
   const bs = booksOf(e); if (!bs.length) { patch([['none_' + e, '<div class=card><div class=empty>Nessun portafoglio in questo ecosistema.</div></div>']]); return; }
@@ -546,17 +585,23 @@ function renderEco(e) {
   const ps = positions().filter(p => p.book === b);
   const name = B.lab ? '🧪 ' + b : (BOOK_NAME[b] || b);
   const p = e + '_' + b + '_', hk = p + 'hero', ck = 'ch_' + e + '_' + b.replace(/\W/g, '');
+  const isPause = e === 'paused' || (B && B.paused);
+  const desc = isPause
+    ? (ECO.paused.desc + (B.paused_reason ? ' Motivo: ' + B.paused_reason + '.' : '') + (ECO[ecoOf(b)] ? ' ' + ECO[ecoOf(b)].desc : ''))
+    : (ECO[e] ? ECO[e].desc : 'Portafoglio paper aggiunto di recente: stesse regole di sicurezza, dati live dal desk.');
+  const banner = isPause ? `<div class="pause-banner">In pausa · niente nuovi ingressi · le posizioni aperte restano in gestione</div>` : '';
+  const dupNote = (B && B.exclude_from_totals) ? `<div class="dup-banner">Duplicato di ${esc(shortBook(B.duplicate_of || 'X_aggressive'))}: gira ancora, ma è escluso dal totale.</div>` : '';
   patch([
-    [p + 'desc', `<div class=intro><div class=desc>${ECO[e] ? ECO[e].desc : 'Portafoglio paper aggiunto di recente: stesse regole di sicurezza, dati live dal desk.'}${B.lab ? '<br>🧪 ' + esc(B.lab) : ''}</div>${bs.length > 1 ? '<div class=chips></div>' : ''}</div>`,
+    [p + 'desc', `<div class=intro>${banner}${dupNote}<div class=desc>${desc}${B.lab ? '<br>🧪 ' + esc(B.lab) : ''}</div>${bs.length > 1 ? '<div class=chips></div>' : ''}</div>`,
       {after: el => syncChips(el, e, bs, b), feed: el => syncChips(el, e, bs, b)}],
     heroCard(hk, 'Equity paper · ' + esc(name), B.eq, B.eq - s0, B.pct, B.w, B.l, [['Win rate', B.wr == null ? '–' : f(B.wr, 0) + '%'], ['Max DD', `<span class=${B.dd < 0 ? 'neg' : 'neu'}>${f(B.dd, 1)}%</span>`], ['Chiusi', B.closed]]),
     chartCard(ck),
     positionsCard(p + 'pos', ps, false),
-    feedCard(p + 'feed', feedLines(e), 'Attività live', esc(D.sum.eco[e][0])),
+    feedCard(p + 'feed', e === 'paused' ? [...new Map(pausedBooks().flatMap(bb => feedLines(ecoOf(bb))).map(x => [x[0], x])).values()].sort((a, c) => c[0] - a[0]).slice(0, 40) : feedLines(e), 'Attività live', e === 'paused' ? 'In pausa' : esc((D.sum.eco[e] || ['', []])[0])),
     agentsCard(p + 'ag', liveAgents(ECO[e] ? ECO[e].agents : allAgents()), 'Stato degli agenti'),
     overshootNote(p + 'ov', B),
     tradesCard(p + 'tr', [b]), labCard(p + 'lab', ECO[e] ? ECO[e].labs : [], bs),
-    e === 'prudente' || e === 'aggressivo' || e === 'pump' || e === 'esploratore' ? killsCard(p + 'kr') : null].filter(Boolean));
+    e === 'prudente' || e === 'aggressivo' || e === 'pump' || e === 'esploratore' || e === 'paused' ? killsCard(p + 'kr') : null].filter(Boolean));
   afterHero(hk);
   chart(ck, [[name, ser, B.eq >= s0 ? '#1fe08a' : '#ff4d64', true]], 1000);
 }
@@ -568,7 +613,8 @@ function setTab(t) {
 
 // ---------- v6: performance board + switcher (patched in place) ----------
 function goBook(b) {
-  const e = ecoOf(b); if (!e) return;
+  const paused = bk(b) && bk(b).paused;
+  const e = paused ? 'paused' : ecoOf(b); if (!e) return;
   sub[e] = b;
   if (tab === e) { haptic(); render(); window.scrollTo({top: 0}); }
   else setTab(e);
@@ -610,14 +656,16 @@ function syncChips(el, e, bs, cur) {
 }
 function renderBoard() {
   const el = $('perf'); if (!el || !D.sum) return;
-  const mb = mainBooks();
+  const mb = mainBooks(), inc = includedBooks();
   if (!mb.length) { el.hidden = true; return; }
   el.hidden = false; el.classList.add('board');
-  const s0 = D.sum.s0, eqT = mb.reduce((a, b) => a + bk(b).eq, 0), startT = s0 * mb.length;
-  const pctT = startT ? (eqT / startT - 1) * 100 : 0;
+  const dt = deskTotals(), eqT = dt.eq, startT = dt.start, pctT = dt.pct;
   const open = openMain();
-  const items = mb.map(b => ({b, name: shortBook(b), tiny: tinyBook(b), pct: bk(b).pct, open: !!open[b]}))
-    .sort((a, c) => (c.pct - a.pct) || a.name.localeCompare(c.name, 'it'));
+  const sortPct = (a, c) => (c.pct - a.pct) || a.name.localeCompare(c.name, 'it');
+  const toItem = b => ({b, name: shortBook(b), tiny: tinyBook(b), pct: bk(b).pct, open: !!open[b], paused: !!bk(b).paused});
+  const activeItems = activeBooks().map(toItem).sort(sortPct);
+  const pausedItems = pausedBooks().map(toItem).sort(sortPct);
+  const items = activeItems.concat(pausedItems);
   const scale = Math.max(2, ...items.map(it => Math.abs(it.pct)));
 
   let tot = el.querySelector('.board-tot');
@@ -633,16 +681,16 @@ function renderBoard() {
   if (pcEl.textContent !== pcTxt) pcEl.textContent = pcTxt;
   pcEl.className = 'board-pct ' + shownCls(pctT, 2);
   tot.classList.toggle('on', tab === 'overview');
-  const ser = totalSeries(mb), up = !ser.length || ser[ser.length - 1][1] >= startT;
+  const ser = totalSeries(inc), up = !ser.length || ser[ser.length - 1][1] >= startT;
   const sp = tot.querySelector('.board-spark');
   const sig = ser.length + ':' + (ser.length ? ser[ser.length - 1][1] : 0) + ':' + (up ? 1 : 0);
   if (sp._sig !== sig) { sp._sig = sig; sp.innerHTML = sparkMini(ser, up); }
 
   let heat = el.querySelector('.heat');
   if (!heat) { heat = document.createElement('div'); heat.className = 'heat'; heat.setAttribute('role', 'list'); el.appendChild(heat); }
-  const have = [...heat.children], byB = Object.fromEntries(have.map(c => [c.dataset.b, c]));
+  const have = [...heat.children].filter(c => c.dataset.b), byB = Object.fromEntries(have.map(c => [c.dataset.b, c]));
   const want = items.map(it => it.b), nodes = [];
-  for (const it of items) {
+  const paint = (it) => {
     let c = byB[it.b];
     if (!c) {
       c = document.createElement('button'); c.type = 'button'; c.className = 'heat-cell'; c.dataset.b = it.b;
@@ -652,18 +700,28 @@ function renderBoard() {
     }
     const h = Math.max(8, Math.round(Math.abs(it.pct) / scale * 100));
     if (c.style.getPropertyValue('--h') !== String(h)) c.style.setProperty('--h', h);
-    c.classList.remove('pos', 'neg', 'neu'); c.classList.add(shownCls(it.pct, 1));
-    const e = ecoOf(it.b), cur = e && (sub[e] || booksOf(e)[0]);
+    c.classList.remove('pos', 'neg', 'neu');
+    if (it.paused) c.classList.add('paused'); else { c.classList.remove('paused'); c.classList.add(shownCls(it.pct, 1)); }
+    const e = it.paused ? 'paused' : ecoOf(it.b), cur = e && (sub[e] || booksOf(e)[0]);
     c.classList.toggle('on', tab !== 'overview' && tab === e && cur === it.b);
     c.querySelector('.hdot').hidden = !it.open;
     const lab = c.querySelector('.heat-n');
     if (lab.textContent !== it.tiny) lab.textContent = it.tiny;
-    c.title = it.name + ' · ' + sg(it.pct) + f(it.pct, 1) + '%';
-    nodes.push(c);
+    c.title = it.name + ' · ' + sg(it.pct) + f(it.pct, 1) + '%' + (it.paused ? ' · in pausa' : '');
+    return c;
+  };
+  activeItems.forEach(it => nodes.push(paint(it)));
+  if (pausedItems.length) {
+    let gap = heat.querySelector('.heat-gap');
+    if (!gap) { gap = document.createElement('div'); gap.className = 'heat-gap'; gap.title = 'In pausa'; gap.setAttribute('aria-hidden', 'true'); }
+    nodes.push(gap);
+    pausedItems.forEach(it => nodes.push(paint(it)));
   }
-  if (have.map(c => c.dataset.b).join('\0') !== want.join('\0')) {
+  const heatSig = nodes.map(c => c.dataset.b || '|').join('\0');
+  const haveSig = [...heat.children].map(c => c.dataset.b || '|').join('\0');
+  if (haveSig !== heatSig) {
     nodes.forEach(c => heat.appendChild(c));
-    have.forEach(c => { if (!want.includes(c.dataset.b)) c.remove(); });
+    [...heat.children].forEach(c => { if (!nodes.includes(c)) c.remove(); });
   }
 }
 function renderTabs() {
@@ -673,16 +731,30 @@ function renderTabs() {
     const bs = ev[1].filter(b => D.sum.b[b] && !bk(b).lab);
     const eq = bs.reduce((a, b) => a + bk(b).eq, 0), st = D.sum.s0 * bs.length;
     const pct = st ? (eq / st - 1) * 100 : null;
-    return {k, label: ev[0], pct, open: bs.some(b => open[b]), bits: bs.map(b => bk(b).pct)};
+    return {k, label: ev[0], pct, open: bs.some(b => open[b]), bits: bs.map(b => bk(b).pct), paused: ecoPaused(k), bs};
   });
+  const activeEcos = ecos.filter(x => !x.paused && x.bs.length);
+  const pb = pausedBooks();
   let lead = null, leadPct = -Infinity;
-  for (const x of ecos) if (x.pct != null && x.pct > leadPct) { leadPct = x.pct; lead = x.k; }
-  const items = [{k: 'overview', label: 'Panoramica', pct: null, open: false, bits: []}].concat(ecos);
+  for (const x of activeEcos) if (!x.bs.some(b => bk(b).exclude_from_totals) && x.pct != null && x.pct > leadPct) { leadPct = x.pct; lead = x.k; }
+  const items = [{k: 'overview', label: 'Panoramica', pct: null, open: false, bits: []}];
+  if (pb.length) {
+    const eq = pb.reduce((a, b) => a + bk(b).eq, 0), st = D.sum.s0 * pb.length;
+    items.push({k: 'paused', label: 'In pausa', pct: st ? (eq / st - 1) * 100 : null, open: pb.some(b => open[b]), bits: pb.map(b => bk(b).pct), paused: true, gap: false});
+  }
+  items.push({k: '_gap', gapOnly: true});
+  activeEcos.forEach(x => items.push({...x, gap: false}));
   const have = [...el.children], byK = Object.fromEntries(have.map(t => [t.dataset.t, t]));
   const want = items.map(x => x.k), nodes = [];
   const scale = Math.max(2, ...ecos.map(x => Math.abs(x.pct || 0)));
   const prevOn = el.querySelector('.tab.on') && el.querySelector('.tab.on').dataset.t;
   for (const it of items) {
+    if (it.gapOnly) {
+      let g = el.querySelector('.tabs-gap');
+      if (!g) { g = document.createElement('span'); g.className = 'tabs-gap'; g.setAttribute('aria-hidden', 'true'); }
+      nodes.push(g);
+      continue;
+    }
     let t = byK[it.k];
     if (!t) {
       t = document.createElement('button'); t.type = 'button'; t.className = 'tab'; t.dataset.t = it.k;
@@ -701,8 +773,9 @@ function renderTabs() {
     t.querySelector('.tdot').hidden = !it.open;
     t.classList.toggle('on', it.k === tab);
     t.classList.toggle('lead', it.k === lead);
-    t.classList.toggle('hot-pos', it.pct != null && it.pct >= 1);
-    t.classList.toggle('hot-neg', it.pct != null && it.pct <= -1);
+    t.classList.toggle('paused', !!it.paused);
+    t.classList.toggle('hot-pos', !it.paused && it.pct != null && it.pct >= 1);
+    t.classList.toggle('hot-neg', !it.paused && it.pct != null && it.pct <= -1);
     const barWrap = t.querySelector('.tbar'), bar = barWrap.querySelector('i');
     if (it.pct == null) barWrap.hidden = true;
     else {
@@ -718,10 +791,12 @@ function renderTabs() {
     } else { bits.hidden = true; if (bits.childElementCount) bits.innerHTML = ''; }
     nodes.push(t);
   }
-  if (have.map(t => t.dataset.t).join('\0') !== want.join('\0')) {
+  const sig = nodes.map(n => n.dataset.t || '|').join('\0');
+  const haveSig = [...el.children].map(n => n.dataset.t || '|').join('\0');
+  if (haveSig !== sig) {
     const sl = el.scrollLeft;
-    nodes.forEach(t => el.appendChild(t));
-    have.forEach(t => { if (!want.includes(t.dataset.t)) t.remove(); });
+    nodes.forEach(n => el.appendChild(n));
+    [...el.children].forEach(n => { if (!nodes.includes(n)) n.remove(); });
     el.scrollLeft = sl;
   }
   if (prevOn !== tab) {
@@ -732,7 +807,11 @@ function renderTabs() {
 function render() {
   renderQueued = false;
   if (!D.sum) return;
-  if (tab !== 'overview' && !D.sum.eco[tab]) tab = 'overview';
+  if ((tab === 'pump' || tab === 'esploratore' || (D.sum.eco[tab] && ecoPaused(tab))) && pausedBooks().length) {
+    if (D.sum.eco[tab]) sub.paused = (D.sum.eco[tab][1] || []).find(b => D.sum.b[b]) || sub.paused;
+    tab = 'paused'; localStorage.setItem('cx_tab', tab);
+  }
+  if (tab !== 'overview' && tab !== 'paused' && !D.sum.eco[tab]) tab = 'overview';
   renderBoard();
   renderTabs();
   if (tab === 'overview') renderOverview(); else renderEco(tab);
