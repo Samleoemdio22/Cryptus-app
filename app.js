@@ -20,17 +20,18 @@ try {
 } catch (e) {}
 
 // ---------- labels ----------
-const A = {Scout:['Scout','#5aa9ff','cerca token'],Filter:['Filter','#ff4d64','scarta i rischiosi'],Analyst:['Analyst','#f6c453','dà il punteggio'],
- Executor:['Executor','#1fe08a','compra/vende (paper)'],Risk:['Risk','#ff9b45','stop e trailing'],Logger:['Logger','#9aa4b2','registra tutto'],
- Regime:['Regime','#a78bfa','umore del mercato'],Scalp:['Scalp','#2fe0d2','mosse rapide 5m'],Lab:['Lab','#ff7ad9','testa migliorie'],
- Sentinel:['Sentinel','#ff6b3d','anti-dump'],Hunter:['Hunter','#e2c044','trova wallet'],Mirror:['Mirror','#7dd3fc','copia i buy'],
- Registratore:['Registratore','#94a3b8','archivia i nastri'],Cacciatore:['Cacciatore','#e2c044','trova wallet precoci'],Analista:['Analista','#f6c453','pagella dei wallet'],
- Sentinella:['Sentinella','#7dd3fc','segue i wallet live'],Confluenza:['Confluenza','#2fe0d2','2+ balene insieme'],Uscite:['Uscite','#ff9b45','esce con le balene'],
- Meteo:['Meteo','#a78bfa','regime di mercato'],Derivati:['Derivati','#5aa9ff','funding, OI, liquidazioni'],Calendario:['Calendario','#f6c453','eventi macro USA'],
- Consiglio:['Consiglio','#e2c044','vota i trade grossi'],Allocatore:['Allocatore','#ff7ad9','sposta capitale (ombra)'],Pagella:['Pagella','#9aa4b2','confronto con BTC fermo'],
- Flusso:['Flusso','#2fe0d2','order flow e livelli'],Commissioni:['Commissioni','#ff4d64','scarta se i costi mangiano'],Sessioni:['Sessioni','#5aa9ff','rotture apertura Londra/NY'],
- Segugio:['Segugio','#1fe08a','Donchian + momentum'],Bande:['Bande','#f6c453','Bollinger + RSI'],Forza:['Forza','#a78bfa','forza contro BTC'],
- Folla:['Folla','#ff6b3d','eccessi di liquidazioni'],Rate:['Rate','#7dd3fc','accumulo a rate']};
+const A = {Scout:['Scout','#5aa9ff','cerca token nuovi'],Filter:['Filter','#ff4d64','scarta quelli troppo rischiosi'],Analyst:['Analyst','#f6c453','dà un voto a ogni token'],
+ Executor:['Executor','#1fe08a','compra e vende, solo in prova'],Risk:['Risk','#ff9b45','chiude se il prezzo va troppo contro'],Logger:['Logger','#9aa4b2','tiene lo storico'],
+ Regime:['Regime','#a78bfa','dice se il mercato è buono o debole'],Scalp:['Scalp','#2fe0d2','cerca mosse rapide di pochi minuti'],Lab:['Lab','#ff7ad9','prova idee in parallelo, senza toccare gli originali'],
+ Sentinel:['Sentinel','#ff6b3d','vende se il prezzo sta crollando'],Hunter:['Hunter','#e2c044','cerca portafogli bravi da copiare'],Mirror:['Mirror','#7dd3fc','copia i loro acquisti'],
+ Registratore:['Registratore','#94a3b8','salva i movimenti dei grandi portafogli'],Cacciatore:['Cacciatore','#e2c044','trova chi è entrato presto sui token esplosi'],Analista:['Analista','#f6c453','tiene solo i portafogli che vincono per davvero'],
+ Sentinella:['Sentinella','#7dd3fc','li segue in tempo reale'],Confluenza:['Confluenza','#2fe0d2','avvisa quando due o più entrano insieme'],Uscite:['Uscite','#ff9b45','esce quando quei portafogli vendono'],
+ Meteo:['Meteo','#a78bfa','dice se il mercato sale, scende o sta fermo'],Derivati:['Derivati','#5aa9ff','guarda le scommesse grosse e i fallimenti improvvisi'],Calendario:['Calendario','#f6c453','avvisa prima delle notizie importanti'],
+ Consiglio:['Consiglio','#e2c044','vota sì o no sui trade più grossi'],Allocatore:['Allocatore','#ff7ad9','propone come spostare i soldi, per ora solo in prova'],Pagella:['Pagella','#9aa4b2','confronta il risultato con Bitcoin tenuto fermo'],
+ Flusso:['Flusso','#2fe0d2','guarda chi sta comprando e vendendo adesso'],Commissioni:['Commissioni','#ff4d64','blocca il trade se le spese mangerebbero il guadagno'],Sessioni:['Sessioni','#5aa9ff','entra quando Londra o New York aprono con forza'],
+ Segugio:['Segugio','#1fe08a','cerca i trend che stanno partendo'],Bande:['Bande','#f6c453','compra in basso e vende in alto, quando il mercato va a zig-zag'],Forza:['Forza','#a78bfa','sceglie le monete che battono Bitcoin'],
+ Folla:['Folla','#ff6b3d','entra contro la folla quando esagera'],Rate:['Rate','#7dd3fc','compra un po’ ogni giorno'],
+ Incroci:['Incroci','#1fe08a','entra quando la media veloce incrocia quella lenta']};
 const ICON={Scout:"<circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/>",Filter:"<path d='M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z'/><path d='M9 12l2 2 4-4'/>",
  Analyst:"<path d='M4 19V9M10 19V5M16 19v-7M22 19H2'/>",Executor:"<path d='M13 2L4 14h7l-1 8 9-12h-7z'/>",Risk:"<circle cx='12' cy='12' r='9'/><circle cx='12' cy='12' r='5'/><circle cx='12' cy='12' r='1'/>",
  Logger:"<path d='M5 4h11l3 3v13H5z'/><path d='M9 10h6M9 14h6M9 18h4'/>",Regime:"<path d='M3 12h4l3-8 4 16 3-8h4'/>",Scalp:"<circle cx='12' cy='13' r='8'/><path d='M12 9v4l2.5 2.5M9 2h6'/>",
@@ -45,45 +46,131 @@ const ICON={Scout:"<circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/>",F
  Flusso:"<path d='M3 8h12l-3-3M21 16H9l3 3'/>",Commissioni:"<circle cx='12' cy='12' r='9'/><path d='M15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .9-3 2s1.3 1.7 3 2 3 .9 3 2-1.3 2-3 2c-1.4 0-2.5-.5-3-1.5M12 6v2M12 16v2'/>",
  Sessioni:"<circle cx='12' cy='12' r='9'/><path d='M12 7v5l3 2'/>",Segugio:"<path d='M3 17l5-5 4 3 9-9'/><path d='M15 6h6v6'/>",Bande:"<path d='M3 7c4-3 14-3 18 0M3 17c4 3 14 3 18 0M3 12h18'/>",
  Forza:"<path d='M6 20V10M12 20V4M18 20v-7'/>",Folla:"<circle cx='9' cy='8' r='3'/><circle cx='17' cy='10' r='2.5'/><path d='M3 20c.8-3.5 3.2-6 6-6s5.2 2.5 6 6M14 20c.4-2.2 1.6-4 3-4s2.6 1.8 3 4'/>",
- Rate:"<path d='M4 20h16M6 16v4M10 12v8M14 9v11M18 5v15'/>"};
-const BOOK_NAME={A_spec:'Prudente A · stop −6%',B_wide:'Prudente B · stop −12%',C_spec_4h:'Prudente C · time stop 4h',D_wide_noregime:'Prudente D · senza regime',
- X_aggressive:'Aggressivo',X_aggr_sentinel:'Aggressivo + Sentinel',S_scalp:'Scalping',P_pump:'Pump organici · impulso ≥ 65',E_explore:'Esploratore · token più giovani e piccoli',W_whale:'Balene · 2+ wallet smart insieme'};
+ Rate:"<path d='M4 20h16M6 16v4M10 12v8M14 9v11M18 5v15'/>",
+ Incroci:"<path d='M5 19L19 5'/><path d='M5 9l6 4'/><path d='M13 13l6 5'/>"};
+const BOOK_NAME={A_spec:'Prudente A · chiude a −6%',B_wide:'Prudente B · chiude a −12%',C_spec_4h:'Prudente C · chiude dopo 4 ore',D_wide_noregime:'Prudente D · anche a mercato debole',
+ X_aggressive:'Aggressivo',X_aggr_sentinel:'Aggressivo + Sentinel',S_scalp:'Scalping',P_pump:'Pump organici · rialzi veri',E_explore:'Esploratore · token più nuovi e piccoli',W_whale:'Balene · almeno 2 portafogli bravi insieme'};
 const BOOK_SHORT={A_spec:'Prudente A',B_wide:'Prudente B',C_spec_4h:'Prudente C',D_wide_noregime:'Prudente D',
  X_aggressive:'Aggressivo',X_aggr_sentinel:'Sentinel',S_scalp:'Scalping',P_pump:'Pump',E_explore:'Esploratore',W_whale:'Balene'};
 const shortBook = b => BOOK_SHORT[b] || (BOOK_NAME[b] || b).split(' · ')[0];
-Object.assign(BOOK_NAME, {M2_day:'Day trading · rotture di sessione', M3_trend:'Trend · Donchian + momentum', M4_range:'Rimbalzo · solo mercato laterale', M5_rot:'Rotazione · le più forti contro BTC',
- M6_contra:'Contrarian · eccessi della folla', M7_dca:'Accumulo smart · rate pesate sulla paura'});
-Object.assign(BOOK_SHORT, {M2_day:'Day trading', M3_trend:'Trend', M4_range:'Rimbalzo', M5_rot:'Rotazione', M6_contra:'Contrarian', M7_dca:'Accumulo'});
+Object.assign(BOOK_NAME, {M2_day:'Day trading · rotture all’apertura', M3_trend:'Trend · pochi trade lunghi', M4_range:'Rimbalzo · solo mercato a zig-zag', M5_rot:'Rotazione · le più forti contro Bitcoin',
+ M6_contra:'Contrarian · contro la folla', M7_dca:'Accumulo · un po’ ogni giorno', M8_astra:'Trend Astra · incroci delle medie giornaliere'});
+Object.assign(BOOK_SHORT, {M2_day:'Day trading', M3_trend:'Trend', M4_range:'Rimbalzo', M5_rot:'Rotazione', M6_contra:'Contrarian', M7_dca:'Accumulo', M8_astra:'Trend Astra'});
 const BOOK_TINY={A_spec:'PrA',B_wide:'PrB',C_spec_4h:'PrC',D_wide_noregime:'PrD',
  X_aggressive:'Agg',X_aggr_sentinel:'Sen',S_scalp:'Scl',P_pump:'Pmp',E_explore:'Esp',W_whale:'Bal'};
-Object.assign(BOOK_TINY, {M2_day:'Day', M3_trend:'Trd', M4_range:'Rmb', M5_rot:'Rot', M6_contra:'Ctr', M7_dca:'Acc'});
-for (const c of ['BTC','ETH','SOL','BNB','XRP','DOGE','ZEC','HYPE']) { BOOK_NAME['SC_' + c] = 'Scalping ' + c; BOOK_SHORT['SC_' + c] = c; BOOK_TINY['SC_' + c] = c.slice(0, 4); }
+Object.assign(BOOK_TINY, {M2_day:'Day', M3_trend:'Trd', M4_range:'Rmb', M5_rot:'Rot', M6_contra:'Ctr', M7_dca:'Acc', M8_astra:'Ast'});
+for (const c of ['BTC','ETH','SOL','BNB','XRP','DOGE','ZEC','HYPE']) {
+  BOOK_NAME['SC_' + c] = 'Scalping ' + c; BOOK_SHORT['SC_' + c] = c; BOOK_TINY['SC_' + c] = c.slice(0, 4);
+  BOOK_NAME['L_SC_' + c] = 'Lab ' + c + ' · più trade'; BOOK_SHORT['L_SC_' + c] = c + ' +trade'; BOOK_TINY['L_SC_' + c] = c.slice(0, 2) + '+';
+  BOOK_NAME['F_SC_' + c] = 'Lab ' + c + ' · solo ordini già piazzati'; BOOK_SHORT['F_SC_' + c] = c + ' limiti'; BOOK_TINY['F_SC_' + c] = c.slice(0, 2) + 'L';
+  BOOK_NAME['Z_SC_' + c] = 'Lab ' + c + ' · puntata variabile'; BOOK_SHORT['Z_SC_' + c] = c + ' puntata'; BOOK_TINY['Z_SC_' + c] = c.slice(0, 2) + 'P';
+}
+Object.assign(BOOK_NAME, {L_M2_day:'Lab Day · solo dopo un restringimento', L_M3_trend:'Lab Trend · stop più largo', L_M4_range:'Lab Rimbalzo · entra solo se prezzo e forza non sono d’accordo',
+ L_M5_rot:'Lab Rotazione · solo le 3 più forti', L_M6_contra:'Lab Contrarian · aspetta un cambio di direzione', L_M7_dca:'Lab Accumulo · cifra sempre uguale',
+ L_M8_astra_orig:'Lab Astra · regole originali', L_M8_astra_filter:'Lab Astra · solo se c’è un trend', L_M8_astra_pyramid:'Lab Astra · può aggiungere in guadagno'});
+Object.assign(BOOK_SHORT, {L_M2_day:'Lab Day', L_M3_trend:'Lab Trend', L_M4_range:'Lab Rimbalzo', L_M5_rot:'Lab Rotaz.', L_M6_contra:'Lab Contr.', L_M7_dca:'Lab Acc.',
+ L_M8_astra_orig:'Astra orig.', L_M8_astra_filter:'Astra filtro', L_M8_astra_pyramid:'Astra +add'});
+Object.assign(BOOK_TINY, {L_M2_day:'LDy', L_M3_trend:'LTr', L_M4_range:'LRm', L_M5_rot:'LRo', L_M6_contra:'LCo', L_M7_dca:'LAc',
+ L_M8_astra_orig:'Ao', L_M8_astra_filter:'Af', L_M8_astra_pyramid:'Ap'});
 const tinyBook = b => BOOK_TINY[b] || shortBook(b).replace(/\s+/g, '').slice(0, 3);
-const labName = b => { const v = bk(b); return DESK === 'major' && v && v.lab ? '🧪 ' + shortBook(v.base) : '🧪 ' + b; };
+const labName = b => {
+  if (LAB_SHORT[b]) return '🧪 ' + LAB_SHORT[b];
+  const msc = /^(F|Z|L)_SC_([A-Z]+)$/.exec(b);
+  if (msc) return '🧪 ' + msc[2] + ({F:' limiti', Z:' puntata', L:' più trade'}[msc[1]]);
+  const m8 = /^L_M8_astra_(orig|filter|pyramid)$/.exec(b);
+  if (m8) return '🧪 Astra ' + ({orig:'originale', filter:'+ filtro', pyramid:'+ aggiunte'}[m8[1]]);
+  const mm = /^LAB(\d+)_/.exec(b);
+  if (mm) return '🧪 Lab ' + mm[1];
+  const v = bk(b);
+  return DESK === 'major' && v && v.lab ? '🧪 ' + shortBook(v.base) : '🧪 ' + b;
+};
 
 
 const ECO={
- prudente:{agents:['Regime','Scout','Filter','Analyst','Executor','Risk','Lab','Logger'],labs:['Lab Segnali','Lab Uscite'],desc:'Filtri rigorosi e punteggio ≥ 70. Quattro varianti di uscita sugli stessi segnali: A stop −6%, B stop −12%, C con time stop 4h, D come B ma senza pausa di mercato.'},
- aggressivo:{agents:['Scout','Filter','Analyst','Executor','Risk','Lab'],labs:['Lab Segnali','Lab Uscite'],desc:'Stessi controlli di sicurezza, filtri “morbidi” più larghi e punteggio ≥ 60: più trade, più rischio.'},
- sentinel:{agents:['Filter','Analyst','Executor','Sentinel','Risk','Lab'],labs:['Lab Sentinel'],desc:'Gemello dell’Aggressivo con Sentinel: se vede segni di dump vende metà, se è grave esce del tutto. Test A/B.'},
- scalping:{agents:['Filter','Scalp','Executor','Risk','Lab'],labs:['Lab Scalping'],desc:'Entrate veloci su forte spinta a 5 minuti: obiettivo +4,5%, stop −3%, massimo 20 minuti. Costi inclusi.'},
- pump:{agents:['Scout','Filter','Analyst','Executor','Risk','Lab'],labs:['Lab Pump'],desc:'Entra sui pump organici precoci: impulso ≥ 65, volume finto < 30, niente firme da bot, tutti i filtri di sicurezza. Stop −7%, trailing 6% dopo +10%, massimo 50 minuti. Size 8%.'},
- esploratore:{agents:['Scout','Filter','Analyst','Executor','Risk'],labs:[],desc:'Esplora token più giovani e più piccoli di quelli che guardano gli altri: da 5 minuti di vita e da $100k di valore. Stessi controlli di sicurezza, punteggio ≥ 60, puntate piccole del 4%. Stop −6%, trailing 5% dopo +8%, massimo 30 minuti. Serve a capire se i paletti degli altri ci fanno perdere occasioni.'},
- balene:{agents:['Registratore','Cacciatore','Analista','Sentinella','Confluenza','Executor','Risk','Uscite'],labs:[],desc:'Segue i wallet “smart”: il Cacciatore trova chi è entrato presto sui token esplosi, l’Analista tiene solo i bravi (non bot, non sniper, non fortuna di un colpo), la Sentinella li segue in tempo reale. Si compra solo se 2+ wallet indipendenti entrano sullo stesso token entro 30 minuti. Size 6% (8% con 3+), stop −12%, trailing 10% dopo +20%, time stop 4h se non arriva a +10%, si esce quando le balene vendono. Prime 24-48 ore IN OMBRA: solo segnali, nessun trade.'},
- copy:{agents:['Hunter','Mirror','Filter','Executor','Sentinel','Risk','Lab'],labs:['Lab Copy'],desc:'Hunter cerca wallet bravi, Mirror copia i loro acquisti (con ritardo e slippage simulati), stessi filtri di sicurezza.'},
- m_scalp:{agents:['Flusso','Commissioni','Executor','Risk','Meteo','Calendario','Lab'],labs:['Lab SC_BTC','Lab SC_ETH','Lab SC_SOL','Lab SC_BNB','Lab SC_XRP','Lab SC_DOGE','Lab SC_ZEC','Lab SC_HYPE'],major:1,desc:'Un portafoglio per coin (BTC, ETH, SOL, BNB, XRP, DOGE, ZEC, HYPE), €1.000 ciascuno, su perpetui simulati. Flusso legge squilibrio del book, chi aggredisce (delta) e assorbimento, più VWAP e sweep dei minimi/massimi. Commissioni scarta il trade se il movimento atteso non vale almeno 2,5 volte i costi. Ordini limit eseguiti solo se il prezzo passa oltre. Tetto 15 trade/ora, stop giornaliero −2,5% per coin, pausa dopo 3 perdite di fila o picchi di volatilità. Massimo 3 coin nella stessa direzione insieme (si muovono in coppia).'},
- m_day:{agents:['Sessioni','Calendario','Meteo','Executor','Risk','Lab'],labs:['Lab M2_day'],major:1,desc:'Rotture del range dei primi 30 minuti di Londra (9:00) e New York (15:30) sulle 10 coin più scambiate, solo con volume ≥ 1,8× la media e dal lato giusto del VWAP. Stop sotto il range (max 1,5 ATR), obiettivo 2R, trailing dopo 1R. Tutto chiuso entro le 22:30.'},
- m_trend:{agents:['Segugio','Meteo','Consiglio','Executor','Risk','Lab'],labs:['Lab M3_trend'],major:1,desc:'Pochi trade lunghi: rottura del canale Donchian a 20 candele (4h) nella direzione delle medie 50/200 e del momentum a 30 e 90 giorni, solo se il Meteo vede un trend. Size per volatilità (rischio 1%), stop 2,5 ATR e trailing a 3 ATR che lascia correre.'},
- m_range:{agents:['Bande','Meteo','Calendario','Executor','Risk','Lab'],labs:['Lab M4_range'],major:1,desc:'Lavora solo col mercato laterale: compra sotto la banda di Bollinger con RSI < 30 (vende sopra con RSI > 70) e punta alla media. Il Meteo lo spegne appena parte un trend e chiude le posizioni.'},
- m_rot:{agents:['Forza','Meteo','Consiglio','Executor','Risk','Lab'],labs:['Lab M5_rot'],major:1,desc:'Tiene le 4 coin più forti contro BTC (forza a 7, 14 e 30 giorni, sopra la media a 20 giorni), ribilancia ogni lunedì e cambia ogni giorno quelle che scendono oltre l’8° posto. Con mercato in discesa o panico resta in cassa.'},
- m_contra:{agents:['Folla','Derivati','Consiglio','Executor','Risk','Lab'],labs:['Lab M6_contra'],major:1,desc:'Entra contro la folla quando esagera: ondata di liquidazioni da un lato, movimento oltre 2 ATR in un’ora, funding che conferma, e candela di inversione. Stop 1,5 ATR, obiettivo 2,5 ATR, massimo 24 ore.'},
- m_dca:{agents:['Rate','Meteo','Executor','Pagella','Lab'],labs:['Lab M7_dca'],major:1,desc:'Riferimento per tutti: ogni giorno compra BTC (60%) ed ETH (40%), di più quando il mercato ha paura e di meno con l’euforia (indice Paura & Avidità). Non vende mai.'},
- paused:{agents:['Scout','Filter','Analyst','Executor','Risk','Lab'],labs:[],desc:'Portafogli messi in pausa: niente nuovi ingressi finché il mercato resta debole. Le posizioni già aperte seguono le regole di uscita. Si può riattivare in qualsiasi momento.'}};
+ prudente:{agents:['Regime','Scout','Filter','Analyst','Executor','Risk','Lab','Logger'],labs:['Lab Segnali','Lab Uscite'],desc:'Entra solo sui token più solidi. A chiude prima, B dà più respiro, D fa lo stesso di B anche quando il mercato è debole.'},
+ aggressivo:{agents:['Scout','Filter','Analyst','Executor','Risk','Lab'],labs:['Lab Segnali','Lab Uscite'],desc:'Stessi controlli di sicurezza, ma entra più spesso e rischia un po’ di più.'},
+ sentinel:{agents:['Filter','Analyst','Executor','Sentinel','Risk','Lab'],labs:['Lab Sentinel'],desc:'Come l’Aggressivo, ma vende in anticipo se il prezzo sta crollando.'},
+ scalping:{agents:['Filter','Scalp','Executor','Risk','Lab'],labs:['Lab Scalping'],desc:'Entra in pochi minuti su una spinta forte, punta a un piccolo guadagno e chiude in fretta.'},
+ pump:{agents:['Scout','Filter','Analyst','Executor','Risk','Lab'],labs:['Lab Pump'],desc:'Cerca i rialzi veri appena partono, non quelli gonfiati dai bot, e resta dentro al massimo 50 minuti.'},
+ esploratore:{agents:['Scout','Filter','Analyst','Executor','Risk'],labs:[],desc:'Prova token più nuovi e più piccoli di quelli degli altri, con puntate leggere, per vedere se ci perdiamo occasioni.'},
+ balene:{agents:['Registratore','Cacciatore','Analista','Sentinella','Confluenza','Executor','Risk','Uscite'],labs:[],desc:'Compra solo quando almeno due portafogli bravi entrano insieme sullo stesso token. All’inizio è in prova: segnala, non compra.'},
+ copy:{agents:['Hunter','Mirror','Filter','Executor','Sentinel','Risk','Lab'],labs:['Lab Copy'],desc:'Cerca portafogli bravi e copia i loro acquisti, con un piccolo ritardo come succederebbe dal vivo.'},
+ m_scalp:{agents:['Flusso','Commissioni','Executor','Risk','Meteo','Calendario','Lab'],labs:['Lab SC_BTC','Lab SC_ETH','Lab SC_SOL','Lab SC_BNB','Lab SC_XRP','Lab SC_DOGE','Lab SC_ZEC','Lab SC_HYPE'],major:1,desc:'Un portafoglio per ogni moneta grande. Entra e esce in pochi minuti, ma solo se il possibile guadagno vale almeno due volte e mezza le spese. Al massimo tre monete nella stessa direzione.'},
+ m_day:{agents:['Sessioni','Calendario','Meteo','Executor','Risk','Lab'],labs:['Lab M2_day'],major:1,desc:'Entra se, all’apertura di Londra o New York, il prezzo esce con forza dal range dei primi 30 minuti. Chiude sempre entro sera.'},
+ m_trend:{agents:['Segugio','Meteo','Consiglio','Executor','Risk','Lab'],labs:['Lab M3_trend'],major:1,desc:'Fa pochi trade e li tiene a lungo, solo quando il mercato sta davvero salendo o scendendo.'},
+ m_range:{agents:['Bande','Meteo','Calendario','Executor','Risk','Lab'],labs:['Lab M4_range'],major:1,desc:'Lavora solo quando il mercato va a zig-zag: compra in basso, vende in alto, e si ferma appena parte un trend.'},
+ m_rot:{agents:['Forza','Meteo','Consiglio','Executor','Risk','Lab'],labs:['Lab M5_rot'],major:1,desc:'Tiene le quattro monete più forti rispetto a Bitcoin e le aggiorna spesso. Se il mercato crolla, resta in cassa.'},
+ m_contra:{agents:['Folla','Derivati','Consiglio','Executor','Risk','Lab'],labs:['Lab M6_contra'],major:1,desc:'Entra contro la folla quando ha esagerato, per esempio dopo tanti fallimenti improvvisi tutti da una parte. Resta al massimo un giorno.'},
+ m_dca:{agents:['Rate','Meteo','Executor','Pagella','Lab'],labs:['Lab M7_dca'],major:1,desc:'Ogni giorno compra un po’ di Bitcoin e Ethereum: di più quando c’è paura, di meno quando tutti sono euforici. Non vende mai.'},
+ m_astra:{agents:['Incroci','Executor','Risk','Derivati','Lab'],labs:['Lab M8_astra'],major:1,desc:'Entra una volta al giorno, al rialzo o al ribasso, quando la media a 20 giorni incrocia quella a 50 sulle 20 monete più scambiate. Al massimo due posizioni nella stessa direzione, e una sola tra Bitcoin, Ethereum e Solana perché si muovono insieme.'},
+ paused:{agents:['Scout','Filter','Analyst','Executor','Risk','Lab'],labs:[],desc:'Niente nuovi ingressi. Le posizioni già aperte seguono le regole di uscita, e si può riaccendere quando vuoi.'}};
+const LAB_SHORT={
+ LAB4_S_scalp:'Lab 4 · stop più largo',LAB5_X_aggressive:'Lab 5 · più severo sul finto',
+ LAB7_X_aggr_sentinel:'Lab 7 · Sentinel',LAB9_X_aggressive:'Lab 9 · vende metà in guadagno',
+ LAB10_X_aggr_sentinel:'Lab 10 · vende metà in guadagno',LAB11_B_wide:'Lab 11 · vende metà in guadagno',
+ LAB12_D_wide_noregime:'Lab 12 · vende metà in guadagno',LAB13_A_spec:'Lab 13 · vende metà in guadagno',
+ LAB14_C_spec_4h:'Lab 14 · vende metà in guadagno',LAB15_P_pump:'Lab 15 · vende metà in guadagno',
+ LAB16_E_explore:'Lab 16 · vende metà in guadagno',LAB17_X_aggressive:'Lab 17 · può rientrare una volta',
+ LAB19_A_spec:'Lab 19 · stop più largo',LAB20_A_spec:'Lab 20 · stop che si adatta',
+ LAB21_B_wide:'Lab 21 · stop che si adatta',LAB22_A_spec:'Lab 22 · esce sul crollo rapido',
+ LAB23_B_wide:'Lab 23 · esce sul crollo rapido',LAB24_X_aggressive:'Lab 24 · filtro di mercato',
+ LAB25_P_pump:'Lab 25 · filtro di mercato',LAB26_E_explore:'Lab 26 · filtro di mercato',
+ LAB27_B_wide:'Lab 27 · puntata variabile',LAB28_X_aggressive:'Lab 28 · puntata variabile'};
+const BOOK_DESC={
+ A_spec:'Entra solo sui token più solidi e chiude se perde il 6%.',
+ B_wide:'Come Prudente A, ma dà più respiro: chiude se perde il 12%.',
+ C_spec_4h:'Come Prudente A, ma chiude comunque dopo 4 ore.',
+ D_wide_noregime:'Come Prudente B, ma continua anche quando il mercato è debole.',
+ X_aggressive:'Entra più spesso, con filtri un po’ più larghi, e rischia di più.',
+ X_aggr_sentinel:'Come l’Aggressivo, ma vende in anticipo se il prezzo sta crollando.',
+ S_scalp:'Entra in pochi minuti su una spinta forte, punta a +4,5% e chiude entro 20 minuti.',
+ P_pump:'Cerca i rialzi veri appena partono e resta dentro al massimo 50 minuti.',
+ E_explore:'Prova token più nuovi e più piccoli, con puntate leggere, per vedere se ci perdiamo occasioni.',
+ W_whale:'Compra solo se almeno due portafogli bravi entrano insieme. Per ora è in prova e non compra ancora.',
+ M2_day:'Entra se, all’apertura di Londra o New York, il prezzo esce con forza dal range dei primi 30 minuti. Chiude sempre entro sera.',
+ M3_trend:'Fa pochi trade e li tiene a lungo, solo quando il mercato sta davvero salendo o scendendo.',
+ M4_range:'Lavora solo quando il mercato va a zig-zag: compra in basso, vende in alto, e si ferma appena parte un trend.',
+ M5_rot:'Tiene le quattro monete più forti rispetto a Bitcoin e le aggiorna spesso. Se il mercato crolla, resta in cassa.',
+ M6_contra:'Entra contro la folla quando ha esagerato. Resta al massimo un giorno.',
+ M7_dca:'Ogni giorno compra un po’ di Bitcoin e Ethereum: di più quando c’è paura, di meno quando tutti sono euforici. Non vende mai.',
+ M8_astra:'Entra una volta al giorno, al rialzo o al ribasso, quando la media a 20 giorni incrocia quella a 50 sulle 20 monete più scambiate. Al massimo due posizioni nella stessa direzione, e una sola tra Bitcoin, Ethereum e Solana perché si muovono insieme.',
+ L_M2_day:'Come il Day trading, ma entra solo dopo che il prezzo si è stretto tanto, come se si stesse caricando. Solo prova.',
+ L_M3_trend:'Come il Trend, ma lo stop che segue il prezzo è più largo, così lascia correre di più. Solo prova.',
+ L_M4_range:'Come il Rimbalzo, ma entra solo se il movimento del prezzo e la forza del mercato non sono d’accordo. Solo prova.',
+ L_M5_rot:'Come la Rotazione, ma tiene solo le 3 monete più forti. Solo prova.',
+ L_M6_contra:'Come il Contrarian, ma aspetta anche un cambio di direzione sul grafico a 15 minuti. Solo prova.',
+ L_M7_dca:'Come l’Accumulo, ma compra sempre la stessa cifra, senza guardare paura o euforia. Solo prova.',
+ L_M8_astra_orig:'Le regole originali di Astra, senza il limite su Bitcoin, Ethereum e Solana insieme. Solo prova.',
+ L_M8_astra_filter:'Come Trend Astra, ma entra solo se c’è un vero trend. Solo prova.',
+ L_M8_astra_pyramid:'Come Trend Astra, ma può aggiungere a una posizione già in guadagno. Solo prova.',
+ LAB4_S_scalp:'Come lo Scalping, ma lo stop è un po’ più largo (−4,5%). Solo prova.',
+ LAB5_X_aggressive:'Come l’Aggressivo, ma è più severo sul volume finto e sui movimenti sospetti. Solo prova.',
+ LAB7_X_aggr_sentinel:'Come Sentinel, ma esce anche se il rialzo a pagamento si ferma. Solo prova.',
+ LAB9_X_aggressive:'Come l’Aggressivo, ma vende metà quando guadagna il 50% e sul resto alza lo stop. Solo prova.',
+ LAB10_X_aggr_sentinel:'Come Sentinel, ma vende metà quando guadagna il 50% e sul resto alza lo stop. Solo prova.',
+ LAB11_B_wide:'Come Prudente B, ma vende metà quando guadagna il 50% e sul resto alza lo stop. Solo prova.',
+ LAB12_D_wide_noregime:'Come Prudente D, ma vende metà quando guadagna il 50% e sul resto alza lo stop. Solo prova.',
+ LAB13_A_spec:'Come Prudente A, ma vende metà a +40% e sul resto alza lo stop. Solo prova.',
+ LAB14_C_spec_4h:'Come Prudente C, ma vende metà a +40% e sul resto alza lo stop. Solo prova.',
+ LAB15_P_pump:'Come Pump, ma vende metà a +30% e sul resto lascia lo stop che segue il prezzo. Solo prova.',
+ LAB16_E_explore:'Come Esploratore, ma vende metà a +30% e sul resto lascia lo stop che segue il prezzo. Solo prova.',
+ LAB17_X_aggressive:'Come l’Aggressivo, ma può rientrare una volta, con metà puntata, solo se il prezzo ha già superato il vecchio massimo. Solo prova.',
+ LAB19_A_spec:'Come Prudente A, ma lo stop è più largo (9%) e la puntata più piccola, così la perdita massima in euro resta uguale. Solo prova.',
+ LAB20_A_spec:'Come Prudente A, ma lo stop si allarga o si stringe a seconda di quanto è nervoso il token, con la stessa perdita massima in euro. Solo prova.',
+ LAB21_B_wide:'Come Prudente B, ma lo stop si allarga o si stringe a seconda di quanto è nervoso il token, con la stessa perdita massima in euro. Solo prova.',
+ LAB22_A_spec:'Come Prudente A, ma esce davvero sul crollo rapido (nell’originale questa uscita gira solo in prova). Solo prova.',
+ LAB23_B_wide:'Come Prudente B, ma esce davvero sul crollo rapido (nell’originale questa uscita gira solo in prova). Solo prova.',
+ LAB24_X_aggressive:'Come l’Aggressivo, ma si ferma quando il mercato è debole, come fanno Prudente A e B. Solo prova.',
+ LAB25_P_pump:'Come Pump, ma con il filtro sul mercato debole. È pronto e parte se si toglie la pausa. Solo prova.',
+ LAB26_E_explore:'Come Esploratore, ma con il filtro sul mercato debole. È pronto e parte se si toglie la pausa. Solo prova.',
+ LAB27_B_wide:'Come Prudente B, ma la puntata sale o scende da sola in base a quanto sta andando bene. Solo prova.',
+ LAB28_X_aggressive:'Come l’Aggressivo, ma la puntata sale o scende da sola in base a quanto sta andando bene. Solo prova.'
+};
 const EXIT_MJ={flat_eod:'chiusura di fine giornata',meteo_off:'spento dal Meteo',rebalance:'ribilanciamento',weak_rs:'coin indebolita',catastrophe:'stop di sicurezza'};
 const EXIT={leader_sell:'wallet copiato ha venduto',whale_sell:'le balene hanno venduto',sentinel_warning:'Sentinel (warning)',sentinel_critical:'Sentinel (critico)',stop_loss:'stop loss',trail_stop:'trailing stop',time_stop:'time stop',take_profit:'take profit',liquidity_collapse:'liquidità crollata'};
 Object.assign(EXIT, EXIT_MJ);
-const KR={pumped_h1:'Già +80% in 1h',low_liquidity:'Liquidità < $20k',liq_to_mcap:'Liq/mcap < 5%',unverifiable:'Non verificabile',rugged_flag:'Segnalato rug',mint_authority:'Mint non revocata',
- freeze_authority:'Freeze non revocata',transfer_fee:'Tassa sul trasferimento',lp_not_locked:'LP non bloccata',top10_concentration:'Top-10 holder troppo alti',dev_holding:'Dev > 3%',dev_past_rugs:'Dev con rug passati',bundle_insiders:'Bundle/insider > 10%',fake_volume:'Volume finto (bot)',volume_bot:'Volume finto (bot)',bump_bot:'Volume finto (bot)',tape_quality:'Volume finto (bot)',wash_volume:'Volume finto (bot)'};
+const KR={pumped_h1:'Già +80% in 1h',low_liquidity:'Troppo poco scambiato',liq_to_mcap:'Poca liquidità rispetto al valore',unverifiable:'Non verificabile',rugged_flag:'Segnalato rug',mint_authority:'Mint non revocata',
+ freeze_authority:'Freeze non revocata',transfer_fee:'Tassa sul trasferimento',lp_not_locked:'LP non bloccata',top10_concentration:'Troppi token in poche mani',dev_holding:'Dev > 3%',dev_past_rugs:'Dev con rug passati',bundle_insiders:'Troppi token già in mano agli insider',fake_volume:'Volume finto (bot)',volume_bot:'Volume finto (bot)',bump_bot:'Volume finto (bot)',tape_quality:'Volume finto (bot)',wash_volume:'Volume finto (bot)'};
 const SI={shadow:['in prova','st-sh'],guard:['guardia','st-sh'],promoted:['promosso','st-pr'],rejected:['respinto','st-rj'],expired:'scaduto',confirmed:['confermato','st-pr'],rolled_back:['annullato','st-rj']};
 const PAL=['#1fe08a','#5aa9ff','#f6c453','#a78bfa','#ff9b45','#2fe0d2','#ff7ad9','#7dd3fc','#e2c044','#ff6b3d'];
 
@@ -235,6 +322,35 @@ setInterval(setLive, 5000);
 
 // ---------- derived ----------
 function books() { return D.sum ? Object.keys(D.sum.b) : []; }
+function hiddenBook(b) {
+  const v = bk(b);
+  if (!v) return false;
+  if (v.duplicate_of) return true;
+  if (v.base && v.base !== b) { const bv = bk(v.base); if (bv && bv.duplicate_of) return true; }
+  return false;
+}
+function visibleBooks() { return books().filter(b => !hiddenBook(b)); }
+function hiddenEco(k) {
+  const ev = D.sum && D.sum.eco && D.sum.eco[k];
+  if (!ev) return false;
+  const mains = ev[1].filter(b => D.sum.b[b] && bk(b) && !bk(b).lab);
+  return mains.length > 0 && mains.every(hiddenBook);
+}
+function bookDesc(b) {
+  if (BOOK_DESC[b]) return BOOK_DESC[b];
+  const msc = /^(F|Z|L)?_?SC_([A-Z]+)$/.exec(b) || /^(F|Z|L)_SC_([A-Z]+)$/.exec(b);
+  if (/^SC_[A-Z]+$/.test(b)) return 'Scalping su ' + b.slice(3) + ': entra e esce in pochi minuti, solo se il possibile guadagno vale almeno due volte e mezza le spese.';
+  if (/^L_SC_[A-Z]+$/.test(b)) return 'Come lo scalping di ' + b.slice(5) + ', ma entra più spesso. Solo prova.';
+  if (/^F_SC_[A-Z]+$/.test(b)) return 'Come lo scalping di ' + b.slice(5) + ', ma entra e prende il profitto solo con ordini già piazzati, così paga meno spese. Solo prova.';
+  if (/^Z_SC_[A-Z]+$/.test(b)) return 'Come lo scalping di ' + b.slice(5) + ', ma la puntata sale o scende da sola in base a quanto sta andando bene. Solo prova.';
+  const v = bk(b);
+  if (v && v.lab) {
+    const lab = String(v.lab).replace(/^shadow:\s*/i, '');
+    return 'Prova in parallelo: ' + lab + '. Non conta nel totale.';
+  }
+  const e = ecoOf(b);
+  return (ECO[e] && ECO[e].desc) || 'Portafoglio di prova, con i dati dal vivo.';
+}
 function bk(b) {
   const v = D.sum && D.sum.b && D.sum.b[b];
   if (!v) return null;
@@ -248,10 +364,10 @@ function bk(b) {
     off: fl.off || null, vsBtc: v[12] ?? null, gross: v[13] ?? null, fees: v[14] ?? null, t1h: v[15] ?? null};
 }
 function liveAgents(list) { const ag = D.ag2 || D.ag || {}; return list.filter(k => ag[k]); }   // only agents the desk actually runs
-function liveLabs() { return [...new Set(Object.keys(D.sum.eco || {}).flatMap(e => (ECO[e] && ECO[e].labs) || []))]; }
+function liveLabs() { return [...new Set(Object.keys(D.sum.eco || {}).filter(e => !hiddenEco(e)).flatMap(e => (ECO[e] && ECO[e].labs) || []))]; }
 function ecoOf(b) { const v = bk(b); const base = (v && v.base) || b; for (const [k, e] of Object.entries(D.sum.eco || {})) if (e[1].includes(base)) return k; return null; }
-function booksOf(e) { if (e === 'paused') return pausedBooks(); return books().filter(b => ecoOf(b) === e); }
-function mainBooks() { return books().filter(b => bk(b) && !bk(b).lab); }
+function booksOf(e) { if (e === 'paused') return pausedBooks(); return visibleBooks().filter(b => ecoOf(b) === e); }
+function mainBooks() { return visibleBooks().filter(b => bk(b) && !bk(b).lab); }
 function pausedBooks() { return mainBooks().filter(b => bk(b).paused); }
 function activeBooks() { return mainBooks().filter(b => !bk(b).paused); }
 function includedBooks() { return mainBooks().filter(b => !bk(b).exclude_from_totals); }
@@ -302,7 +418,8 @@ setInterval(fixRt, 5000);
 function oldToNew(a) { return [a[0], a[1], a[2], 'info', a[3], null, [], null, 1]; }   // ntfy-only fallback (old line format)
 function feedLines(e) {
   const f = D.f2 && D.f2.f ? D.f2.f : ((D.feed && D.feed.f) || []).map(oldToNew);
-  return (e ? f.filter(x => !x[7] || x[7].includes(e)) : f).slice(0, e ? 40 : 60);
+  const vis = x => !x[7] || !x[7].length || x[7].some(eco => !hiddenEco(eco));
+  return (e ? f.filter(x => !x[7] || x[7].includes(e)) : f).filter(vis).slice(0, e ? 40 : 60);
 }
 const lk = x => (x[8] ? 'o' : '') + x[0];   // old-format lines get their own key so v2 lines replace them
 function lineHTML(x, fresh) {
@@ -496,7 +613,7 @@ function heroCard(k, label, eqUsd, pnlUsd, pct, w, l, extra) {
   const mult = eqUsd / (pnlUsd != null ? eqUsd - pnlUsd : eqUsd);
   // the big number is filled (and tweened) after patching, so tiny equity moves don't rebuild the card
   return [k, `<div class="card hero"><div class=lbl>${label}</div><div class=eq data-n="${eqUsd}">${E(prevVal[k] ?? eqUsd)}</div>
-  <div class=pnl><span class="pv ${cls(pnlUsd)}">${sg(pnlUsd)}${E(pnlUsd)}</span><span class="pc ${cls(pnlUsd)}">${sg(pct)}${f(pct)}%</span><span class="badge${mult < 1 ? ' neg' : Math.abs(mult - 1) < 1e-9 ? ' neu' : ''}">${f(mult, 3)}x</span><span class=pnll>P&amp;L dalla partenza</span></div>
+  <div class=pnl><span class="pv ${cls(pnlUsd)}">${sg(pnlUsd)}${E(pnlUsd)}</span><span class="pc ${cls(pnlUsd)}">${sg(pct)}${f(pct)}%</span><span class="badge${mult < 1 ? ' neg' : Math.abs(mult - 1) < 1e-9 ? ' neu' : ''}">${f(mult, 3)}x</span><span class=pnll>Risultato da inizio</span></div>
   <div class=stats>${[['V / P', `<span class=pos>${w}</span> / <span class=neg>${l}</span>`]].concat(extra).map(([k2, v]) => `<div class=st><div class=k>${k2}</div><div class=v>${v}</div></div>`).join('')}</div></div>`];
 }
 const chartCard = id => [id, `<div class="card chartcard"><div class=chartw><canvas id=${id}></canvas></div></div>`];
@@ -504,13 +621,13 @@ const lastAg = {};
 function agentsCard(k, list, title) {
   const ag = D.ag2 || {}, old = D.ag || {};
   const rows = list.map(a => {
-    const [nm, c] = A[a] || [a, '#ccc']; const x = ag[a];
+    const [nm, c, role] = A[a] || [a, '#ccc', '']; const x = ag[a];
     const fresh = x && lastAg[a] != null && lastAg[a] !== x[0];
     if (x) lastAg[a] = x[0];
     const kc = x ? (KIND[x[1]] || KIND.info)[1] : '#5b636e';
     const body = x && x[2] ? `${logo(x[3])}<span class=tx>${esc(x[2].replace(BIDI, ''))}</span>${pills(x[4], 2)}${rt(x[0])}`
-      : old[a] && old[a][1] ? `<span class=tx>${esc(old[a][1])}</span>${rt(old[a][0])}` : `<span class="tx mut">${esc(nm)} · nessuna azione ancora</span>`;
-    return `<div class="arow${fresh ? ' flash' : ''}" style="--kc:${kc}" title="${esc(nm + (x && x[5] ? ' · ' + x[5] : ''))}"><span class=ic style="background:${c}1a;color:${c}">${svg(a)}</span>${body}</div>`;
+      : old[a] && old[a][1] ? `<span class=tx>${esc(old[a][1])}</span>${rt(old[a][0])}` : `<span class="tx mut">nessuna azione ancora</span>`;
+    return `<div class="arow${fresh ? ' flash' : ''}" style="--kc:${kc}" title="${esc((role || nm) + (x && x[5] ? ' · ' + x[5] : ''))}"><span class=ic style="background:${c}1a;color:${c}">${svg(a)}</span><div class=pl><div class=pt><b>${esc(nm)}</b>${role ? `<small>${esc(role)}</small>` : ''}</div><div class=abody>${body}</div></div></div>`;
   }).join('');
   const titleHtml = `${title}<span class=cnt>${list.length} agenti</span>`;
   return [k, `<div class=card><h3>${titleHtml}</h3><div class="scroll5 aglist">${rows}</div></div>`, {after: afterScroll('.arow'), feed: el => patchList(el, '.arow', rows, titleHtml)}];
@@ -566,21 +683,22 @@ function tradesCard(k, bs) {
 function labCard(k, labs, bs) {
   const L = D.lab || {}; const m = L.m || {};
   const rows = labs.map(l => { const x = m[l]; return `<div class=labrow><span class=ln2>${esc(l)}</span><span class=lm>${x ? esc(x[1].replace(/^\[[^\]]+\]\s*/, '')) + `<span class=ts>${dt(x[0])}</span>` : '<span class=ts>in attesa di dati sufficienti</span>'}</span></div>`; }).join('');
-  const ex = (L.ex || []).filter(e => !bs || bs.includes(e[1]) || bs.includes(e[3]));
-  const et = ex.length ? '<table style="margin-top:8px"><tr><th>Esperimento</th><th>Book</th><th>Stato</th></tr>' + ex.map(e => { const s = SI[e[2]]; const [t, c] = Array.isArray(s) ? s : [s || e[2], ''];
-    return `<tr><td>${esc(e[0])}</td><td>${esc(BOOK_NAME[e[1]] || e[1])}</td><td class="${c}">${esc(t)}</td></tr>`; }).join('') + '</table>' : '';
+  const ex = (L.ex || []).filter(e => !hiddenBook(e[1]) && !hiddenBook(e[3]) && (!bs || bs.includes(e[1]) || bs.includes(e[3])));
+  const et = ex.length ? '<table style="margin-top:8px"><tr><th>Prova</th><th>Portafoglio</th><th>Stato</th></tr>' + ex.map(e => { const s = SI[e[2]]; const [t, c] = Array.isArray(s) ? s : [s || e[2], ''];
+    const labTxt = BOOK_DESC[e[3]] || BOOK_DESC[e[1]] || e[0];
+    return `<tr><td>${esc(labTxt)}</td><td>${esc(shortBook(e[1]) || e[1])}</td><td class="${c}">${esc(t)}</td></tr>`; }).join('') + '</table>' : '';
   return [k, `<div class=card><h3>Lab<span class=cnt>${ex.length ? ex.length + ' esperimenti' : ''}</span></h3>${rows}${et}</div>`];
 }
 function killsCard(k) {
   const kr = Object.entries((D.lab && D.lab.kr) || {}); const mx = Math.max(1, ...kr.map(x => x[1]));
-  return [k, `<div class=card><h3>Scartati dal Filter</h3>${kr.length ? '<table><tr><th>Regola</th><th>Token</th></tr>' + kr.map(([r, n]) =>
+  return [k, `<div class=card><h3>Token lasciati stare</h3>${kr.length ? '<table><tr><th>Regola</th><th>Token</th></tr>' + kr.map(([r, n]) =>
     `<tr><td>${esc(KR[r] || r)}<div style="height:4px;border-radius:3px;margin-top:5px;width:${n / mx * 100}%;background:linear-gradient(90deg,#ff4d64,rgba(255,77,100,.3))"></div></td><td>${n}</td></tr>`).join('') + '</table>' : '<div class=empty>Ancora nessun token scartato.</div>'}</div>`];
 }
 function overshootNote(k, B) {
   const [n, avg, worst] = B.ov; if (!n) return null;
-  return [k, `<div class=card><h3>Precisione delle uscite<span class=cnt>${n} uscite su stop/obiettivo</span></h3><div class=sub style="margin:0">
+  return [k, `<div class=card><h3>Quanto usciamo giusti<span class=cnt>${n} uscite su stop o obiettivo</span></h3><div class=sub style="margin:0">
     <span class=${cls(Math.round(avg * 10))}>${sg(avg)}${f(avg, 1)} punti</span><span class=neu style="font-weight:500;font-size:12.5px">in media rispetto alla soglia · peggiore ${sg(worst)}${f(worst, 1)}</span></div>
-    <div class=desc style="margin:6px 0 0">Quanto il prezzo di uscita è finito oltre lo stop (o l’obiettivo): più vicino a 0, meglio è.</div></div>`];
+    <div class=desc style="margin:6px 0 0">Quanto siamo usciti oltre lo stop o l’obiettivo: più è vicino a zero, meglio è.</div></div>`];
 }
 function allAgents() { return [...new Set(Object.keys(A).concat(Object.keys(D.ag2 || D.ag || {})))]; }
 function afterHero(k) { const el = document.querySelector(`[data-k="${k}"] .eq`); if (el) tween(el, k, +el.dataset.n, v => E(v)); }
@@ -592,11 +710,11 @@ function majorCard(k) {
   const x = D.mx; if (!x) return null;
   const m = x.meteo || {}, d = x.der || {}, r = REG[m.label] || [m.lbl || 'in calcolo', 'neu'];
   const cal = ((x.cal && x.cal.next) || []).slice(0, 3).map(e => `<div class=mxr><span>${esc(dt(e[0]))}</span><b>${esc(e[1])}</b></div>`).join('') || '<div class=empty>Nessun evento nei prossimi giorni.</div>';
-  const al = x.alloc, lbl = {M1_scalp: 'Scalping', M2_day: 'Day', M3_trend: 'Trend', M4_range: 'Rimbalzo', M5_rot: 'Rotazione', M6_contra: 'Contrarian', M7_dca: 'Accumulo'};
+  const al = x.alloc, lbl = {M1_scalp: 'Scalping', M2_day: 'Day', M3_trend: 'Trend', M4_range: 'Rimbalzo', M5_rot: 'Rotazione', M6_contra: 'Contrarian', M7_dca: 'Accumulo', M8_astra: 'Trend Astra'};
   const alloc = al && al.w ? Object.entries(al.w).sort((a, b) => b[1] - a[1]).map(([b, w]) => `<span class=mxw><i style="width:${Math.round(w * 100 / 0.3 * 100) / 100}%"></i>${esc(lbl[b] || b)} ${f(w * 100, 0)}%</span>`).join('') : '<div class=empty>In calcolo.</div>';
   const mains = mainBooks(), beat = mains.filter(b => bk(b).vsBtc != null && bk(b).vsBtc > 0).length;
   const v = (x.votes || [])[0];
-  const vote = v ? `<div class=mxr><span>${esc(dt(v[0]))} · ${esc(shortBook(v[1]))} ${esc((v[2] || '').replace('USDT', ''))} ${esc(v[3])}</span><b class=${v[4] ? 'pos' : 'neg'}>${v[4] ? 'approvato' : 'bocciato'}</b></div>` : '<div class=empty>Nessuna votazione ancora: si vota sui trade grossi e su ogni ingresso di Trend, Rotazione e Contrarian.</div>';
+  const vote = v ? `<div class=mxr><span>${esc(dt(v[0]))} · ${esc(shortBook(v[1]))} ${esc((v[2] || '').replace('USDT', ''))} ${esc(v[3])}</span><b class=${v[4] ? 'pos' : 'neg'}>${v[4] ? 'approvato' : 'bocciato'}</b></div>` : '<div class=empty>Nessuna votazione ancora: si vota sui trade grossi e su ogni ingresso di Trend, Rotazione, Contrarian e Trend Astra.</div>';
   const fr = d.btc_funding == null ? '–' : f(d.btc_funding * 100, 4) + '%';
   return [k, `<div class="card mxcard"><h3>Sala macchine<span class=cnt>agenti comuni</span></h3>
     <div class=mxgrid>
@@ -605,19 +723,19 @@ function majorCard(k) {
       <div class=mxb><div class=k>Derivati</div><div class=v>${fr}</div><small>funding BTC · liquidazioni 1h ${usdK(d.liq_long_1h)} long / ${usdK(d.liq_short_1h)} short</small></div>
       <div class=mxb><div class=k>Pagella</div><div class="v ${beat ? 'pos' : 'neu'}">${beat}/${mains.length}</div><small>battono BTC fermo (${x.bh == null ? '–' : sg(x.bh) + f(x.bh, 2) + '%'})</small></div>
     </div>
-    <div class=mxs><div class=k>Calendario macro <small>(stop ingressi 30 min prima / 60 dopo)</small></div>${cal}</div>
-    <div class=mxs><div class=k>Allocatore <small>in ombra: propone, non sposta capitale</small></div><div class=mxws>${alloc}</div></div>
+    <div class=mxs><div class=k>Calendario notizie <small>(niente ingressi da 30 minuti prima a un’ora dopo)</small></div>${cal}</div>
+    <div class=mxs><div class=k>Allocatore <small>per ora solo propone, non sposta i soldi</small></div><div class=mxws>${alloc}</div></div>
     <div class=mxs><div class=k>Consiglio <small>ultima votazione</small></div>${vote}</div></div>`];
 }
 function pagellaCard(k, b, B) {
   if (B.vsBtc == null && B.gross == null) return null;
   const net = B.eq - D.sum.s0;
-  return [k, `<div class=card><h3>Pagella<span class=cnt>contro BTC tenuto fermo</span></h3><div class=stats>
+  return [k, `<div class=card><h3>Pagella<span class=cnt>confronto con Bitcoin tenuto fermo</span></h3><div class=stats>
     <div class=st><div class=k>vs BTC</div><div class="v ${shownCls(B.vsBtc, 1)}">${B.vsBtc == null ? '–' : sg(B.vsBtc) + f(B.vsBtc, 1) + ' pt'}</div></div>
     <div class=st><div class=k>Lordo</div><div class="v ${shownCls(B.gross || 0, 2)}">${sg(B.gross)}${E(B.gross || 0)}</div></div>
     <div class=st><div class=k>Commissioni</div><div class="v neg">${E(-(B.fees || 0))}</div></div>
     <div class=st><div class=k>Netto</div><div class="v ${shownCls(net, 2)}">${sg(net)}${E(net)}</div></div></div>
-    <div class=desc style="margin:8px 0 0">Lordo = risultato dei prezzi (slippage incluso) prima delle commissioni. Netto = quello che resta davvero, posizioni aperte comprese.</div></div>`];
+    <div class=desc style="margin:8px 0 0">Lordo è il risultato dei prezzi, prima delle spese. Netto è quello che resta davvero, posizioni aperte comprese.</div></div>`];
 }
 function scalpCard(k) {
   const sc = (D.mx && D.mx.sc) || {}; const rows = Object.entries(sc);
@@ -628,7 +746,7 @@ function scalpCard(k) {
   return [k, `<div class=card><h3>Scalping per coin<span class=cnt>lordo vs commissioni</span></h3>
     <table class=sctab><tr><th>Coin</th><th>Trade</th><th>Lordo</th><th>Comm.</th><th>Netto</th><th>Mov./costi %</th></tr>${tr}
     <tr class=tot><td>Totale</td><td>${tot[0]}</td><td class=${shownCls(tot[1], 2)}>${E(tot[1])}</td><td class=neg>${E(-tot[2])}</td><td class=${shownCls(tot[3], 2)}>${E(tot[3])}</td><td></td></tr></table>
-    <div class=desc style="margin:8px 0 0">Mov./costi: movimento atteso nei prossimi 10 minuti contro il costo di un giro completo (commissioni + spread + slippage). Si entra solo se il primo vale almeno 2,5 volte il secondo.</div></div>`];
+    <div class=desc style="margin:8px 0 0">Si entra solo se il movimento atteso nei prossimi 10 minuti vale almeno due volte e mezza le spese (commissioni e scarto di prezzo).</div></div>`];
 }
 function paintSwitch() {
   const el = $('deskswitch'); if (!el) return;
@@ -666,8 +784,8 @@ function renderOverview() {
   const eqT = tot.eq, startT = tot.start, pct = tot.pct, pnl = eqT - startT;
   const w = inc.reduce((a, b) => a + bk(b).w, 0), l = inc.reduce((a, b) => a + bk(b).l, 0), cl = inc.reduce((a, b) => a + bk(b).closed, 0);
   const ps = positions();
-  const activeRows = Object.entries(D.sum.eco).filter(([k]) => !ecoPaused(k)).map(([k, e]) => {
-    const bs = e[1].filter(b => D.sum.b[b] && !bk(b).lab); return ecoRow(k, e, bs, s0, ps);
+  const activeRows = Object.entries(D.sum.eco).filter(([k]) => !ecoPaused(k) && !hiddenEco(k)).map(([k, e]) => {
+    const bs = e[1].filter(b => D.sum.b[b] && !bk(b).lab && !hiddenBook(b)); return ecoRow(k, e, bs, s0, ps);
   }).join('');
   const pb = pausedBooks();
   const pauseRows = pb.length ? pb.map(b => {
@@ -677,12 +795,12 @@ function renderOverview() {
   }).join('') : '';
   const hk = 'o_hero';
   patch([
-    heroCard(hk, `Equity totale · ${tot.n} portafogli`, eqT, pnl, pct, w, l, [['Chiusi', cl], ['Aperte', ps.length], ['Partenza', '€' + f(tot.n * 1000, 0)]]),
+    heroCard(hk, `Totale in prova · ${tot.n} portafogli`, eqT, pnl, pct, w, l, [['Chiusi', cl], ['Aperte', ps.length], ['Partenza', '€' + f(tot.n * 1000, 0)]]),
     chartCard('ch_all'),
     ['o_eco', `<div class=card><h3>Portafogli attivi<span class=cnt>tocca per aprire</span></h3>${activeRows || '<div class=empty>Nessun portafoglio attivo.</div>'}</div>`, {after: el => el.querySelectorAll('.eco').forEach(x => x.onclick = () => setTab(x.dataset.t))}],
     DESK === 'major' ? majorCard('o_mx') : null,
-    pauseRows ? ['o_pause', `<div class="card paused-card"><h3>In pausa<span class=cnt>niente nuovi ingressi</span></h3><div class=desc style="margin:0 0 8px">${esc(pauseReason())}. Le posizioni già aperte seguono le regole di uscita.</div>${pauseRows}</div>`, {after: el => el.querySelectorAll('.eco').forEach(x => x.onclick = () => { if (x.dataset.b) sub.paused = x.dataset.b; setTab('paused'); })}] : null,
-    positionsCard('o_pos', ps.filter(p => inc.includes(p.book) || pausedBooks().includes(p.book)), true),
+    pauseRows ? ['o_pause', `<div class="card paused-card"><h3>In pausa<span class=cnt>niente nuovi ingressi</span></h3><div class=desc style="margin:0 0 8px">${esc(pauseReason())}. Le posizioni già aperte restano in gestione.</div>${pauseRows}</div>`, {after: el => el.querySelectorAll('.eco').forEach(x => x.onclick = () => { if (x.dataset.b) sub.paused = x.dataset.b; setTab('paused'); })}] : null,
+    positionsCard('o_pos', ps.filter(p => !hiddenBook(p.book) && (inc.includes(p.book) || pausedBooks().includes(p.book))), true),
     feedCard('o_feed', feedLines(null), 'Attività live', 'tutti gli agenti'),
     agentsCard('o_ag', liveAgents(allAgents()), 'Stato degli agenti'),
     tradesCard('o_tr', inc.concat(pb)), labCard('o_lab', liveLabs(), null), DESK === 'major' ? null : killsCard('o_kr')].filter(Boolean));
@@ -699,15 +817,15 @@ function renderEco(e) {
   const p = e + '_' + b + '_', hk = p + 'hero', ck = 'ch_' + e + '_' + b.replace(/\W/g, '');
   const isPause = e === 'paused' || (B && B.paused);
   const desc = isPause
-    ? (ECO.paused.desc + (B.paused_reason ? ' Motivo: ' + B.paused_reason + '.' : '') + (ECO[ecoOf(b)] ? ' ' + ECO[ecoOf(b)].desc : ''))
-    : (ECO[e] ? ECO[e].desc : 'Portafoglio paper aggiunto di recente: stesse regole di sicurezza, dati live dal desk.');
+    ? (ECO.paused.desc + (B.paused_reason ? ' Motivo: ' + B.paused_reason + '.' : ''))
+    : bookDesc(b);
   const banner = isPause ? `<div class="pause-banner">In pausa · niente nuovi ingressi · le posizioni aperte restano in gestione</div>`
     : (B && B.off ? `<div class="pause-banner">Fermo ora: ${esc(B.off)}</div>` : '');
-  const dupNote = (B && B.exclude_from_totals) ? `<div class="dup-banner">Duplicato di ${esc(shortBook(B.duplicate_of || 'X_aggressive'))}: gira ancora, ma è escluso dal totale.</div>` : '';
+  const dupNote = '';
   patch([
-    [p + 'desc', `<div class=intro>${banner}${dupNote}<div class=desc>${desc}${B.lab ? '<br>🧪 ' + esc(B.lab) : ''}</div>${bs.length > 1 ? '<div class=chips></div>' : ''}</div>`,
+    [p + 'desc', `<div class=intro>${banner}${dupNote}<div class=desc>${esc(desc)}</div>${bs.length > 1 ? '<div class=chips></div>' : ''}</div>`,
       {after: el => syncChips(el, e, bs, b), feed: el => syncChips(el, e, bs, b)}],
-    heroCard(hk, 'Equity paper · ' + esc(name), B.eq, B.eq - s0, B.pct, B.w, B.l, [['Win rate', B.wr == null ? '–' : f(B.wr, 0) + '%'], ['Max DD', `<span class=${B.dd < 0 ? 'neg' : 'neu'}>${f(B.dd, 1)}%</span>`], ['Chiusi', B.closed]]),
+    heroCard(hk, 'In prova · ' + esc(name), B.eq, B.eq - s0, B.pct, B.w, B.l, [['% vinti', B.wr == null ? '–' : f(B.wr, 0) + '%'], ['Calo max', `<span class=${B.dd < 0 ? 'neg' : 'neu'}>${f(B.dd, 1)}%</span>`], ['Chiusi', B.closed]]),
     chartCard(ck),
     positionsCard(p + 'pos', ps, false),
     feedCard(p + 'feed', e === 'paused' ? [...new Map(pausedBooks().flatMap(bb => feedLines(ecoOf(bb))).map(x => [x[0], x])).values()].sort((a, c) => c[0] - a[0]).slice(0, 40) : feedLines(e), 'Attività live', e === 'paused' ? 'In pausa' : esc((D.sum.eco[e] || ['', []])[0])),
@@ -843,7 +961,7 @@ function renderTabs() {
   const el = $('tabs'); if (!el || !D.sum) return;
   const open = openMain();
   const ecos = Object.entries(D.sum.eco).map(([k, ev]) => {
-    const bs = ev[1].filter(b => D.sum.b[b] && !bk(b).lab);
+    const bs = ev[1].filter(b => D.sum.b[b] && !bk(b).lab && !hiddenBook(b));
     const eq = bs.reduce((a, b) => a + bk(b).eq, 0), st = D.sum.s0 * bs.length;
     const pct = st ? (eq / st - 1) * 100 : null;
     return {k, label: ev[0], pct, open: bs.some(b => open[b]), bits: bs.map(b => bk(b).pct), paused: ecoPaused(k), bs};
@@ -924,10 +1042,10 @@ function render() {
   paintSwitch();
   if (!D.sum) return;
   if (DESK === 'meme' && (tab === 'pump' || tab === 'esploratore' || (D.sum.eco[tab] && ecoPaused(tab))) && pausedBooks().length) {
-    if (D.sum.eco[tab]) sub.paused = (D.sum.eco[tab][1] || []).find(b => D.sum.b[b]) || sub.paused;
+    if (D.sum.eco[tab]) sub.paused = (D.sum.eco[tab][1] || []).find(b => D.sum.b[b] && !hiddenBook(b)) || sub.paused;
     tab = 'paused'; localStorage.setItem('cx_tab', tab);
   }
-  if (tab !== 'overview' && tab !== 'paused' && !D.sum.eco[tab]) tab = 'overview';
+  if (tab !== 'overview' && tab !== 'paused' && (!D.sum.eco[tab] || hiddenEco(tab) || !booksOf(tab).length)) tab = 'overview';
   STORES[DESK].tab = tab;
   renderBoard();
   renderTabs();
