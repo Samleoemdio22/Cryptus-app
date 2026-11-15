@@ -23,14 +23,27 @@ try {
 const A = {Scout:['Scout','#5aa9ff','cerca token'],Filter:['Filter','#ff4d64','scarta i rischiosi'],Analyst:['Analyst','#f6c453','dà il punteggio'],
  Executor:['Executor','#1fe08a','compra/vende (paper)'],Risk:['Risk','#ff9b45','stop e trailing'],Logger:['Logger','#9aa4b2','registra tutto'],
  Regime:['Regime','#a78bfa','umore del mercato'],Scalp:['Scalp','#2fe0d2','mosse rapide 5m'],Lab:['Lab','#ff7ad9','testa migliorie'],
- Sentinel:['Sentinel','#ff6b3d','anti-dump'],Hunter:['Hunter','#e2c044','trova wallet'],Mirror:['Mirror','#7dd3fc','copia i buy']};
+ Sentinel:['Sentinel','#ff6b3d','anti-dump'],Hunter:['Hunter','#e2c044','trova wallet'],Mirror:['Mirror','#7dd3fc','copia i buy'],
+ Registratore:['Registratore','#94a3b8','archivia i nastri'],Cacciatore:['Cacciatore','#e2c044','trova wallet precoci'],Analista:['Analista','#f6c453','pagella dei wallet'],
+ Sentinella:['Sentinella','#7dd3fc','segue i wallet live'],Confluenza:['Confluenza','#2fe0d2','2+ balene insieme'],Uscite:['Uscite','#ff9b45','esce con le balene']};
 const ICON={Scout:"<circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/>",Filter:"<path d='M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z'/><path d='M9 12l2 2 4-4'/>",
  Analyst:"<path d='M4 19V9M10 19V5M16 19v-7M22 19H2'/>",Executor:"<path d='M13 2L4 14h7l-1 8 9-12h-7z'/>",Risk:"<circle cx='12' cy='12' r='9'/><circle cx='12' cy='12' r='5'/><circle cx='12' cy='12' r='1'/>",
  Logger:"<path d='M5 4h11l3 3v13H5z'/><path d='M9 10h6M9 14h6M9 18h4'/>",Regime:"<path d='M3 12h4l3-8 4 16 3-8h4'/>",Scalp:"<circle cx='12' cy='13' r='8'/><path d='M12 9v4l2.5 2.5M9 2h6'/>",
  Lab:"<path d='M9 3h6M10 3v6L4.5 18.5A2 2 0 006.2 21h11.6a2 2 0 001.7-2.5L14 9V3'/><path d='M7 15h10'/>",Sentinel:"<path d='M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z'/><circle cx='12' cy='12' r='3'/>",
- Hunter:"<circle cx='12' cy='12' r='8'/><path d='M12 2v4M12 18v4M2 12h4M18 12h4'/>",Mirror:"<rect x='8' y='8' width='12' height='12' rx='2'/><path d='M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2'/>"};
+ Hunter:"<circle cx='12' cy='12' r='8'/><path d='M12 2v4M12 18v4M2 12h4M18 12h4'/>",Mirror:"<rect x='8' y='8' width='12' height='12' rx='2'/><path d='M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2'/>",
+ Registratore:"<rect x='3' y='6' width='18' height='12' rx='2'/><circle cx='8' cy='12' r='2'/><circle cx='16' cy='12' r='2'/>",Cacciatore:"<circle cx='12' cy='12' r='8'/><path d='M12 2v4M12 18v4M2 12h4M18 12h4'/>",
+ Analista:"<path d='M4 19V9M10 19V5M16 19v-7M22 19H2'/>",Sentinella:"<path d='M4 12a8 8 0 0116 0M7 12a5 5 0 0110 0'/><circle cx='12' cy='12' r='1.5'/>",
+ Confluenza:"<path d='M3 12c3-4 6-4 9 0s6 4 9 0'/><path d='M3 17c3-4 6-4 9 0s6 4 9 0'/>",Uscite:"<path d='M14 4h5v16h-5'/><path d='M10 16l4-4-4-4M14 12H3'/>"};
 const BOOK_NAME={A_spec:'Prudente A · stop −6%',B_wide:'Prudente B · stop −12%',C_spec_4h:'Prudente C · time stop 4h',D_wide_noregime:'Prudente D · senza regime',
- X_aggressive:'Aggressivo',X_aggr_sentinel:'Aggressivo + Sentinel',S_scalp:'Scalping',P_pump:'Pump organici · impulso ≥ 65',E_explore:'Esploratore · token più giovani e piccoli'};
+ X_aggressive:'Aggressivo',X_aggr_sentinel:'Aggressivo + Sentinel',S_scalp:'Scalping',P_pump:'Pump organici · impulso ≥ 65',E_explore:'Esploratore · token più giovani e piccoli',W_whale:'Balene · 2+ wallet smart insieme'};
+const BOOK_SHORT={A_spec:'Prudente A',B_wide:'Prudente B',C_spec_4h:'Prudente C',D_wide_noregime:'Prudente D',
+ X_aggressive:'Aggressivo',X_aggr_sentinel:'Sentinel',S_scalp:'Scalping',P_pump:'Pump',E_explore:'Esploratore',W_whale:'Balene'};
+const shortBook = b => BOOK_SHORT[b] || (BOOK_NAME[b] || b).split(' · ')[0];
+const BOOK_TINY={A_spec:'PrA',B_wide:'PrB',C_spec_4h:'PrC',D_wide_noregime:'PrD',
+ X_aggressive:'Agg',X_aggr_sentinel:'Sen',S_scalp:'Scl',P_pump:'Pmp',E_explore:'Esp',W_whale:'Bal'};
+const tinyBook = b => BOOK_TINY[b] || shortBook(b).replace(/\s+/g, '').slice(0, 3);
+
+
 const ECO={
  prudente:{agents:['Regime','Scout','Filter','Analyst','Executor','Risk','Lab','Logger'],labs:['Lab Segnali','Lab Uscite'],desc:'Filtri rigorosi e punteggio ≥ 70. Quattro varianti di uscita sugli stessi segnali: A stop −6%, B stop −12%, C con time stop 4h, D come B ma senza pausa di mercato.'},
  aggressivo:{agents:['Scout','Filter','Analyst','Executor','Risk','Lab'],labs:['Lab Segnali','Lab Uscite'],desc:'Stessi controlli di sicurezza, filtri “morbidi” più larghi e punteggio ≥ 60: più trade, più rischio.'},
@@ -38,8 +51,9 @@ const ECO={
  scalping:{agents:['Filter','Scalp','Executor','Risk','Lab'],labs:['Lab Scalping'],desc:'Entrate veloci su forte spinta a 5 minuti: obiettivo +4,5%, stop −3%, massimo 20 minuti. Costi inclusi.'},
  pump:{agents:['Scout','Filter','Analyst','Executor','Risk','Lab'],labs:['Lab Pump'],desc:'Entra sui pump organici precoci: impulso ≥ 65, volume finto < 30, niente firme da bot, tutti i filtri di sicurezza. Stop −7%, trailing 6% dopo +10%, massimo 50 minuti. Size 8%.'},
  esploratore:{agents:['Scout','Filter','Analyst','Executor','Risk'],labs:[],desc:'Esplora token più giovani e più piccoli di quelli che guardano gli altri: da 5 minuti di vita e da $100k di valore. Stessi controlli di sicurezza, punteggio ≥ 60, puntate piccole del 4%. Stop −6%, trailing 5% dopo +8%, massimo 30 minuti. Serve a capire se i paletti degli altri ci fanno perdere occasioni.'},
+ balene:{agents:['Registratore','Cacciatore','Analista','Sentinella','Confluenza','Executor','Risk','Uscite'],labs:[],desc:'Segue i wallet “smart”: il Cacciatore trova chi è entrato presto sui token esplosi, l’Analista tiene solo i bravi (non bot, non sniper, non fortuna di un colpo), la Sentinella li segue in tempo reale. Si compra solo se 2+ wallet indipendenti entrano sullo stesso token entro 30 minuti. Size 6% (8% con 3+), stop −12%, trailing 10% dopo +20%, time stop 4h se non arriva a +10%, si esce quando le balene vendono. Prime 24-48 ore IN OMBRA: solo segnali, nessun trade.'},
  copy:{agents:['Hunter','Mirror','Filter','Executor','Sentinel','Risk','Lab'],labs:['Lab Copy'],desc:'Hunter cerca wallet bravi, Mirror copia i loro acquisti (con ritardo e slippage simulati), stessi filtri di sicurezza.'}};
-const EXIT={leader_sell:'wallet copiato ha venduto',sentinel_warning:'Sentinel (warning)',sentinel_critical:'Sentinel (critico)',stop_loss:'stop loss',trail_stop:'trailing stop',time_stop:'time stop',take_profit:'take profit',liquidity_collapse:'liquidità crollata'};
+const EXIT={leader_sell:'wallet copiato ha venduto',whale_sell:'le balene hanno venduto',sentinel_warning:'Sentinel (warning)',sentinel_critical:'Sentinel (critico)',stop_loss:'stop loss',trail_stop:'trailing stop',time_stop:'time stop',take_profit:'take profit',liquidity_collapse:'liquidità crollata'};
 const KR={pumped_h1:'Già +80% in 1h',low_liquidity:'Liquidità < $20k',liq_to_mcap:'Liq/mcap < 5%',unverifiable:'Non verificabile',rugged_flag:'Segnalato rug',mint_authority:'Mint non revocata',
  freeze_authority:'Freeze non revocata',transfer_fee:'Tassa sul trasferimento',lp_not_locked:'LP non bloccata',top10_concentration:'Top-10 holder troppo alti',dev_holding:'Dev > 3%',dev_past_rugs:'Dev con rug passati',bundle_insiders:'Bundle/insider > 10%',fake_volume:'Volume finto (bot)',volume_bot:'Volume finto (bot)',bump_bot:'Volume finto (bot)',tape_quality:'Volume finto (bot)',wash_volume:'Volume finto (bot)'};
 const SI={shadow:['in prova','st-sh'],guard:['guardia','st-sh'],promoted:['promosso','st-pr'],rejected:['respinto','st-rj'],expired:'scaduto',confirmed:['confermato','st-pr'],rolled_back:['annullato','st-rj']};
@@ -403,6 +417,12 @@ function spark(ser, up) {
   const pts = ser.map((p, i) => `${(i / (ser.length - 1) * 64).toFixed(1)},${(26 - (p[1] - mn) / r * 24).toFixed(1)}`).join(' ');
   return `<svg class=spark viewBox="0 0 64 28"><polyline points="${pts}" fill="none" stroke="${up ? '#1fe08a' : '#ff4d64'}" stroke-width="1.7" stroke-linejoin="round"/></svg>`;
 }
+function sparkMini(ser, up) {
+  if (!ser || ser.length < 2) return '';
+  const w = 72, h = 22, ys = ser.map(p => p[1]), mn = Math.min(...ys), mx = Math.max(...ys), r = mx - mn || 1;
+  const pts = ser.map((p, i) => `${(i / (ser.length - 1) * w).toFixed(1)},${(h - 2 - (p[1] - mn) / r * (h - 4)).toFixed(1)}`).join(' ');
+  return `<svg class=bspark viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="${up ? '#1fe08a' : '#ff4d64'}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
 function heroCard(k, label, eqUsd, pnlUsd, pct, w, l, extra) {
   const mult = eqUsd / (pnlUsd != null ? eqUsd - pnlUsd : eqUsd);
   // the big number is filled (and tweened) after patching, so tiny equity moves don't rebuild the card
@@ -525,11 +545,10 @@ function renderEco(e) {
   const b = sub[e], B = bk(b), s0 = D.sum.s0, ser = eqs[b] || [];
   const ps = positions().filter(p => p.book === b);
   const name = B.lab ? '🧪 ' + b : (BOOK_NAME[b] || b);
-  const chips = bs.length > 1 ? '<div class=chips>' + bs.map(x => `<button class="chip${x === b ? ' on' : ''}" data-b="${x}">${esc(bk(x).lab ? '🧪 ' + x : (BOOK_NAME[x] || x).split(' · ')[0])}</button>`).join('') + '</div>' : '';
   const p = e + '_' + b + '_', hk = p + 'hero', ck = 'ch_' + e + '_' + b.replace(/\W/g, '');
   patch([
-    [p + 'desc', `<div class=intro><div class=desc>${ECO[e] ? ECO[e].desc : 'Portafoglio paper aggiunto di recente: stesse regole di sicurezza, dati live dal desk.'}${B.lab ? '<br>🧪 ' + esc(B.lab) : ''}</div>${chips}</div>`,
-      {after: el => el.querySelectorAll('.chip').forEach(c => c.onclick = () => { sub[e] = c.dataset.b; haptic(); render(); })}],
+    [p + 'desc', `<div class=intro><div class=desc>${ECO[e] ? ECO[e].desc : 'Portafoglio paper aggiunto di recente: stesse regole di sicurezza, dati live dal desk.'}${B.lab ? '<br>🧪 ' + esc(B.lab) : ''}</div>${bs.length > 1 ? '<div class=chips></div>' : ''}</div>`,
+      {after: el => syncChips(el, e, bs, b), feed: el => syncChips(el, e, bs, b)}],
     heroCard(hk, 'Equity paper · ' + esc(name), B.eq, B.eq - s0, B.pct, B.w, B.l, [['Win rate', B.wr == null ? '–' : f(B.wr, 0) + '%'], ['Max DD', `<span class=${B.dd < 0 ? 'neg' : 'neu'}>${f(B.dd, 1)}%</span>`], ['Chiusi', B.closed]]),
     chartCard(ck),
     positionsCard(p + 'pos', ps, false),
@@ -546,18 +565,175 @@ function setTab(t) {
   const v = $('view'); v.classList.remove('swap'); void v.offsetWidth; v.classList.add('swap'); setTimeout(() => v.classList.remove('swap'), 450);
   render(); window.scrollTo({top: 0});
 }
+
+// ---------- v6: performance board + switcher (patched in place) ----------
+function goBook(b) {
+  const e = ecoOf(b); if (!e) return;
+  sub[e] = b;
+  if (tab === e) { haptic(); render(); window.scrollTo({top: 0}); }
+  else setTab(e);
+}
+function shownCls(v, d) {          // colour from the rounded value so 0,00 stays grey
+  const n = Number(Number(v).toFixed(d)); return cls(n);
+}
+function openMain() {
+  const mb = new Set(mainBooks()), o = {};
+  for (const p of positions()) if (mb.has(p.book)) o[p.book] = true;
+  return o;
+}
+function syncChips(el, e, bs, cur) {
+  let wrap = el.querySelector('.chips');
+  if (!bs || bs.length <= 1) { if (wrap) wrap.remove(); return; }
+  if (!wrap) { wrap = document.createElement('div'); wrap.className = 'chips'; el.appendChild(wrap); }
+  const have = [...wrap.children], byB = Object.fromEntries(have.map(c => [c.dataset.b, c]));
+  const nodes = [];
+  for (const x of bs) {
+    let c = byB[x];
+    if (!c) {
+      c = document.createElement('button'); c.type = 'button'; c.className = 'chip'; c.dataset.b = x;
+      c.innerHTML = '<span class="tdot" hidden></span><span class="cn"></span><span class="tp"></span>';
+      c.onclick = () => { sub[e] = c.dataset.b; haptic(); render(); };
+    }
+    const name = bk(x).lab ? '🧪 ' + x : shortBook(x);
+    const cn = c.querySelector('.cn'); if (cn.textContent !== name) cn.textContent = name;
+    const pct = bk(x).pct, ptxt = sg(pct) + f(pct, 1) + '%', tp = c.querySelector('.tp');
+    if (tp.textContent !== ptxt) tp.textContent = ptxt;
+    tp.className = 'tp ' + shownCls(pct, 1);
+    c.querySelector('.tdot').hidden = !positions().some(p => p.book === x);
+    c.classList.toggle('on', x === cur);
+    nodes.push(c);
+  }
+  if (have.map(c => c.dataset.b).join('\0') !== bs.join('\0')) {
+    nodes.forEach(c => wrap.appendChild(c));
+    have.forEach(c => { if (!bs.includes(c.dataset.b)) c.remove(); });
+  }
+}
+function renderBoard() {
+  const el = $('perf'); if (!el || !D.sum) return;
+  const mb = mainBooks();
+  if (!mb.length) { el.hidden = true; return; }
+  el.hidden = false; el.classList.add('board');
+  const s0 = D.sum.s0, eqT = mb.reduce((a, b) => a + bk(b).eq, 0), startT = s0 * mb.length;
+  const pctT = startT ? (eqT / startT - 1) * 100 : 0;
+  const open = openMain();
+  const items = mb.map(b => ({b, name: shortBook(b), tiny: tinyBook(b), pct: bk(b).pct, open: !!open[b]}))
+    .sort((a, c) => (c.pct - a.pct) || a.name.localeCompare(c.name, 'it'));
+  const scale = Math.max(2, ...items.map(it => Math.abs(it.pct)));
+
+  let tot = el.querySelector('.board-tot');
+  if (!tot) {
+    tot = document.createElement('button'); tot.type = 'button'; tot.className = 'board-tot'; tot.title = 'Apri la panoramica';
+    tot.innerHTML = '<span class="board-k">Totale</span><span class="board-row"><span class="board-eq"></span><span class="board-spark"></span><span class="board-pct"></span></span>';
+    tot.onclick = () => setTab('overview');
+    el.appendChild(tot);
+  }
+  const eqEl = tot.querySelector('.board-eq'), pcEl = tot.querySelector('.board-pct');
+  const eqTxt = E(eqT), pcTxt = sg(pctT) + f(pctT) + '%';
+  if (eqEl.textContent !== eqTxt) eqEl.textContent = eqTxt;
+  if (pcEl.textContent !== pcTxt) pcEl.textContent = pcTxt;
+  pcEl.className = 'board-pct ' + shownCls(pctT, 2);
+  tot.classList.toggle('on', tab === 'overview');
+  const ser = totalSeries(mb), up = !ser.length || ser[ser.length - 1][1] >= startT;
+  const sp = tot.querySelector('.board-spark');
+  const sig = ser.length + ':' + (ser.length ? ser[ser.length - 1][1] : 0) + ':' + (up ? 1 : 0);
+  if (sp._sig !== sig) { sp._sig = sig; sp.innerHTML = sparkMini(ser, up); }
+
+  let heat = el.querySelector('.heat');
+  if (!heat) { heat = document.createElement('div'); heat.className = 'heat'; heat.setAttribute('role', 'list'); el.appendChild(heat); }
+  const have = [...heat.children], byB = Object.fromEntries(have.map(c => [c.dataset.b, c]));
+  const want = items.map(it => it.b), nodes = [];
+  for (const it of items) {
+    let c = byB[it.b];
+    if (!c) {
+      c = document.createElement('button'); c.type = 'button'; c.className = 'heat-cell'; c.dataset.b = it.b;
+      c.setAttribute('role', 'listitem');
+      c.innerHTML = '<span class="heat-track"><i class="heat-bar"></i><span class="hdot" hidden></span></span><span class="heat-n"></span>';
+      c.onclick = ev => { ev.stopPropagation(); goBook(c.dataset.b); };
+    }
+    const h = Math.max(8, Math.round(Math.abs(it.pct) / scale * 100));
+    if (c.style.getPropertyValue('--h') !== String(h)) c.style.setProperty('--h', h);
+    c.classList.remove('pos', 'neg', 'neu'); c.classList.add(shownCls(it.pct, 1));
+    const e = ecoOf(it.b), cur = e && (sub[e] || booksOf(e)[0]);
+    c.classList.toggle('on', tab !== 'overview' && tab === e && cur === it.b);
+    c.querySelector('.hdot').hidden = !it.open;
+    const lab = c.querySelector('.heat-n');
+    if (lab.textContent !== it.tiny) lab.textContent = it.tiny;
+    c.title = it.name + ' · ' + sg(it.pct) + f(it.pct, 1) + '%';
+    nodes.push(c);
+  }
+  if (have.map(c => c.dataset.b).join('\0') !== want.join('\0')) {
+    nodes.forEach(c => heat.appendChild(c));
+    have.forEach(c => { if (!want.includes(c.dataset.b)) c.remove(); });
+  }
+}
 function renderTabs() {
-  const tabs = [['overview', 'Panoramica', null]].concat(Object.entries(D.sum.eco).map(([k, e]) => { const bs = e[1].filter(b => D.sum.b[b]);
-    const eq = bs.reduce((a, b) => a + bk(b).eq, 0), st = D.sum.s0 * bs.length; return [k, e[0], st ? (eq / st - 1) * 100 : null]; }));
-  const html = tabs.map(([k, l, p]) => `<button class="tab${k === tab ? ' on' : ''}" data-t="${k}">${esc(l)}${p == null ? '' : `<span class="tp ${cls(Math.round(p * 10))}">${sg(p)}${f(p, 1)}%</span>`}</button>`).join('');
-  const el = $('tabs'); if (el._h === html) return; el._h = html; el.innerHTML = html;
-  document.querySelectorAll('.tab').forEach(x => x.onclick = () => setTab(x.dataset.t));
-  const on = document.querySelector('.tab.on'); if (on && on.scrollIntoViewIfNeeded) on.scrollIntoViewIfNeeded(false);
+  const el = $('tabs'); if (!el || !D.sum) return;
+  const open = openMain();
+  const ecos = Object.entries(D.sum.eco).map(([k, ev]) => {
+    const bs = ev[1].filter(b => D.sum.b[b] && !bk(b).lab);
+    const eq = bs.reduce((a, b) => a + bk(b).eq, 0), st = D.sum.s0 * bs.length;
+    const pct = st ? (eq / st - 1) * 100 : null;
+    return {k, label: ev[0], pct, open: bs.some(b => open[b]), bits: bs.map(b => bk(b).pct)};
+  });
+  let lead = null, leadPct = -Infinity;
+  for (const x of ecos) if (x.pct != null && x.pct > leadPct) { leadPct = x.pct; lead = x.k; }
+  const items = [{k: 'overview', label: 'Panoramica', pct: null, open: false, bits: []}].concat(ecos);
+  const have = [...el.children], byK = Object.fromEntries(have.map(t => [t.dataset.t, t]));
+  const want = items.map(x => x.k), nodes = [];
+  const scale = Math.max(2, ...ecos.map(x => Math.abs(x.pct || 0)));
+  const prevOn = el.querySelector('.tab.on') && el.querySelector('.tab.on').dataset.t;
+  for (const it of items) {
+    let t = byK[it.k];
+    if (!t) {
+      t = document.createElement('button'); t.type = 'button'; t.className = 'tab'; t.dataset.t = it.k;
+      t.innerHTML = '<span class="tdot" hidden></span><span class="tn"></span><span class="tp"></span><span class="tbits"></span><span class="tbar"><i></i></span>';
+      t.onclick = () => setTab(t.dataset.t);
+    }
+    const tn = t.querySelector('.tn'); if (tn.textContent !== it.label) tn.textContent = it.label;
+    const tp = t.querySelector('.tp');
+    if (it.pct == null) { tp.hidden = true; tp.textContent = ''; tp.className = 'tp'; }
+    else {
+      tp.hidden = false;
+      const ptxt = sg(it.pct) + f(it.pct, 1) + '%';
+      if (tp.textContent !== ptxt) tp.textContent = ptxt;
+      tp.className = 'tp ' + shownCls(it.pct, 1);
+    }
+    t.querySelector('.tdot').hidden = !it.open;
+    t.classList.toggle('on', it.k === tab);
+    t.classList.toggle('lead', it.k === lead);
+    t.classList.toggle('hot-pos', it.pct != null && it.pct >= 1);
+    t.classList.toggle('hot-neg', it.pct != null && it.pct <= -1);
+    const barWrap = t.querySelector('.tbar'), bar = barWrap.querySelector('i');
+    if (it.pct == null) barWrap.hidden = true;
+    else {
+      barWrap.hidden = false;
+      bar.style.width = Math.max(10, Math.round(Math.abs(it.pct) / scale * 100)) + '%';
+      bar.className = shownCls(it.pct, 1);
+    }
+    const bits = t.querySelector('.tbits');
+    if (it.bits.length > 1) {
+      bits.hidden = false;
+      if (bits.childElementCount !== it.bits.length) bits.innerHTML = it.bits.map(() => '<i></i>').join('');
+      [...bits.children].forEach((i, n) => { i.className = shownCls(it.bits[n], 1); });
+    } else { bits.hidden = true; if (bits.childElementCount) bits.innerHTML = ''; }
+    nodes.push(t);
+  }
+  if (have.map(t => t.dataset.t).join('\0') !== want.join('\0')) {
+    const sl = el.scrollLeft;
+    nodes.forEach(t => el.appendChild(t));
+    have.forEach(t => { if (!want.includes(t.dataset.t)) t.remove(); });
+    el.scrollLeft = sl;
+  }
+  if (prevOn !== tab) {
+    const on = el.querySelector('.tab.on');
+    if (on) { if (on.scrollIntoViewIfNeeded) on.scrollIntoViewIfNeeded(false); else on.scrollIntoView({inline: 'nearest', block: 'nearest'}); }
+  }
 }
 function render() {
   renderQueued = false;
   if (!D.sum) return;
   if (tab !== 'overview' && !D.sum.eco[tab]) tab = 'overview';
+  renderBoard();
   renderTabs();
   if (tab === 'overview') renderOverview(); else renderEco(tab);
   const foot = `Solo paper trading · ogni portafoglio parte da €1.000 virtuali · cambio fisso 1 EUR = ${f(FX(), 4)} USD<br>nessun wallet, nessuna chiave, nessun ordine reale`;

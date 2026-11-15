@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 <div class="wrap">
@@ -22,13 +22,16 @@
     <div class="live" id="live"><span class="dot wait" id="dot"></span><span id="livetxt">Connessione…</span></div>
   </header>
   <div class="deskline" id="deskline"></div>
-  <nav class="tabs" id="tabs"></nav>
+  <div class="stickyhead">
+    <div class="perf" id="perf" hidden></div>
+    <nav class="tabs" id="tabs"></nav>
+  </div>
   <main id="view">
     <div class="card hero sk"><div class="skl w40"></div><div class="skl big"></div><div class="skl w60"></div><div class="skl chart"></div></div>
     <div class="card sk"><div class="skl w40"></div><div class="skl"></div><div class="skl"></div><div class="skl"></div></div>
   </main>
   <footer class="foot" id="foot">Solo paper trading · ogni portafoglio parte da €1.000 virtuali · nessun wallet, nessun ordine reale</footer>
 </div>
-<script src="app.js?v=5"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>
