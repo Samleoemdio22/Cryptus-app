@@ -99,6 +99,13 @@ td small{display:block;color:var(--mut2);font-size:10.5px}
 .ln.new{animation:slidein .7s cubic-bezier(.2,.8,.2,1)}
 @keyframes slidein{0%{opacity:0;transform:translateX(-14px);background:color-mix(in srgb,var(--kc) 22%,transparent)}60%{opacity:1;transform:none}100%{background:transparent}}
 .arow{display:flex;align-items:center;gap:8px;padding:8px 0 8px 9px;border-top:1px solid var(--line);position:relative;min-width:0;font-size:12.5px}
+.arow .pl{flex:1;min-width:0}
+.arow .pt{display:flex;align-items:baseline;gap:6px;min-width:0}
+.arow .pt b{font:700 12.5px/1.2 Inter,system-ui,sans-serif;color:#edf1f5}
+.arow .pt small{margin:0;color:var(--mut2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.arow .abody{display:flex;align-items:center;gap:7px;min-width:0;margin-top:2px}
+.arow .abody .tx{flex:1}
+
 .arow:first-of-type{border-top:0}
 .arow .ic{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex:none}
 .arow .ic svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
