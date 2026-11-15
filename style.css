@@ -204,3 +204,24 @@ img.tk{background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.
 .chip .tdot[hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){.heat-bar,.tab .tbar i{transition:none}}
 @media(max-width:380px){.board-eq{font-size:19px}.heat{height:42px}.heat-track{height:24px}}
+
+/* ---------- v7: paused books group ---------- */
+.heat-gap{flex:none;width:8px;align-self:stretch;margin:0 1px 10px;position:relative}
+.heat-gap:before{content:"";position:absolute;left:50%;top:2px;bottom:0;width:0;border-left:1px dashed rgba(255,255,255,.2);transform:translateX(-50%)}
+.heat-cell.paused{opacity:.78;color:#6b7480}
+.heat-cell.paused .heat-bar{background:#5b636e;box-shadow:none;opacity:.9}
+.heat-cell.paused .heat-n{color:#7c8591}
+.heat-cell.paused.on .heat-track{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.05);box-shadow:none}
+.heat-cell.paused.on .heat-n{color:#c9d0d8;font-weight:700}
+.tabs-gap{flex:none;width:1px;height:22px;margin:0 7px;background:rgba(255,255,255,.16);align-self:center;border-radius:1px}
+.tab.paused{color:#9aa3ae;border-style:dashed;border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.03)}
+.tab.paused .tp{color:#9aa3ae}
+.tab.paused.on{background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.04));color:#eef1f4;border-color:rgba(255,255,255,.3);border-style:dashed}
+.tab.paused.on .tn,.tab.paused.on .tp{color:#eef1f4}
+.tab.paused.lead:not(.on)::after{display:none}
+.pause-banner,.dup-banner{font-size:12px;font-weight:600;padding:8px 11px;border-radius:12px;margin:0 0 8px;letter-spacing:.1px}
+.pause-banner{color:#d7dbe0;background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.16)}
+.dup-banner{color:#c9d0d8;background:rgba(246,196,83,.06);border:1px solid rgba(246,196,83,.18)}
+.card.paused-card{border-style:dashed;border-color:rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01)),var(--card)}
+.eco.paused{opacity:.82}
+.eco.paused b:after{content:" in pausa";font-weight:700;font-size:10px;color:#9aa3ae;letter-spacing:.4px;text-transform:uppercase;margin-left:6px}
