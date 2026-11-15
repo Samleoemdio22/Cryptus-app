@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
 <div class="wrap">
@@ -23,6 +23,10 @@
   </header>
   <div class="deskline" id="deskline"></div>
   <div class="stickyhead">
+    <div class="deskswitch" id="deskswitch" role="tablist" aria-label="Scegli il desk">
+      <button type="button" data-d="meme" role="tab"><span class="dsn">Meme</span><span class="dsp"></span></button>
+      <button type="button" data-d="major" role="tab"><span class="dsn">Major</span><span class="dsp"></span></button>
+    </div>
     <div class="perf" id="perf" hidden></div>
     <nav class="tabs" id="tabs"></nav>
   </div>
@@ -32,6 +36,6 @@
   </main>
   <footer class="foot" id="foot">Solo paper trading · ogni portafoglio parte da €1.000 virtuali · nessun wallet, nessun ordine reale</footer>
 </div>
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>
