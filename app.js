@@ -95,7 +95,7 @@ const ECO={
  esploratore:{agents:['Scout','Filter','Analyst','Executor','Risk'],labs:[],desc:'Prova token più nuovi e più piccoli di quelli degli altri, con puntate leggere, per vedere se ci perdiamo occasioni.'},
  balene:{agents:['Registratore','Cacciatore','Analista','Sentinella','Confluenza','Executor','Risk','Uscite'],labs:[],desc:'Compra solo quando almeno due portafogli bravi entrano insieme sullo stesso token. All’inizio è in prova: segnala, non compra.'},
  copy:{agents:['Hunter','Mirror','Filter','Executor','Sentinel','Risk','Lab'],labs:['Lab Copy'],desc:'Cerca portafogli bravi e copia i loro acquisti, con un piccolo ritardo come succederebbe dal vivo.'},
- m_scalp:{agents:['Flusso','Commissioni','Executor','Risk','Meteo','Calendario','Lab'],labs:['Lab SC_BTC','Lab SC_ETH','Lab SC_SOL','Lab SC_BNB','Lab SC_XRP','Lab SC_DOGE','Lab SC_ZEC','Lab SC_HYPE'],major:1,desc:'Un portafoglio per ogni moneta grande. Entra e esce in pochi minuti, ma solo se il possibile guadagno vale almeno due volte e mezza le spese. Al massimo tre monete nella stessa direzione.'},
+ m_scalp:{agents:['Flusso','Commissioni','Executor','Risk','Meteo','Calendario','Lab'],labs:['Lab SC_BTC','Lab SC_ETH','Lab SC_SOL','Lab SC_BNB','Lab SC_XRP','Lab SC_DOGE','Lab SC_ZEC','Lab SC_HYPE'],major:1,desc:'Un portafoglio per ogni moneta grande. Gli scalper normali sono in pausa; girano solo le versioni a commissioni basse. Al massimo tre monete nella stessa direzione.'},
  m_day:{agents:['Sessioni','Calendario','Meteo','Executor','Risk','Lab'],labs:['Lab M2_day'],major:1,desc:'Entra se, all’apertura di Londra o New York, il prezzo esce con forza dal range dei primi 30 minuti. Chiude sempre entro sera.'},
  m_trend:{agents:['Segugio','Meteo','Consiglio','Executor','Risk','Lab'],labs:['Lab M3_trend'],major:1,desc:'Fa pochi trade e li tiene a lungo, solo quando il mercato sta davvero salendo o scendendo.'},
  m_range:{agents:['Bande','Meteo','Calendario','Executor','Risk','Lab'],labs:['Lab M4_range'],major:1,desc:'Lavora solo quando il mercato va a zig-zag: compra in basso, vende in alto, e si ferma appena parte un trend.'},
@@ -115,7 +115,13 @@ const LAB_SHORT={
  LAB21_B_wide:'Lab 21 · stop che si adatta',LAB22_A_spec:'Lab 22 · esce sul crollo rapido',
  LAB23_B_wide:'Lab 23 · esce sul crollo rapido',LAB24_X_aggressive:'Lab 24 · filtro di mercato',
  LAB25_P_pump:'Lab 25 · filtro di mercato',LAB26_E_explore:'Lab 26 · filtro di mercato',
- LAB27_B_wide:'Lab 27 · puntata variabile',LAB28_X_aggressive:'Lab 28 · puntata variabile'};
+ LAB27_B_wide:'Lab 27 · puntata variabile',LAB28_X_aggressive:'Lab 28 · puntata variabile',
+ LAB29_X_aggressive:'Lab 29 · flusso organico',
+ LAB30_A_spec:'Lab 30 · salta i token sospetti',LAB31_B_wide:'Lab 31 · salta i token sospetti',
+ LAB32_A_spec:'Lab 32 · esce se i furbi vendono',LAB33_B_wide:'Lab 33 · esce se i furbi vendono',
+ LAB36_X_aggressive:'Lab 36 · solo token con più liquidità',LAB37_P_pump:'Lab 37 · solo token con più liquidità',
+ LAB38_A_spec:'Lab 38 · solo token con più liquidità',LAB39_B_wide:'Lab 39 · solo token con più liquidità',
+ LAB40_S_scalp:'Lab 40 · niente monete già salite'};
 const BOOK_DESC={
  A_spec:'Entra solo sui token più solidi e chiude se perde il 6%.',
  B_wide:'Come Prudente A, ma dà più respiro: chiude se perde il 12%.',
@@ -164,7 +170,17 @@ const BOOK_DESC={
  LAB25_P_pump:'Come Pump, ma con il filtro sul mercato debole. È pronto e parte se si toglie la pausa. Solo prova.',
  LAB26_E_explore:'Come Esploratore, ma con il filtro sul mercato debole. È pronto e parte se si toglie la pausa. Solo prova.',
  LAB27_B_wide:'Come Prudente B, ma la puntata sale o scende da sola in base a quanto sta andando bene. Solo prova.',
- LAB28_X_aggressive:'Come l’Aggressivo, ma la puntata sale o scende da sola in base a quanto sta andando bene. Solo prova.'
+ LAB28_X_aggressive:'Come l’Aggressivo, ma la puntata sale o scende da sola in base a quanto sta andando bene. Solo prova.',
+ LAB29_X_aggressive:'Come l’Aggressivo, ma dà più peso agli acquisti veri e meno al semplice movimento. Solo prova.',
+ LAB30_A_spec:'Come l’originale, ma salta il token se dentro c’è chi l’ha creato o un gruppo di wallet collegati. Se c’è un wallet furbo punta un po’ di più. Solo prova.',
+ LAB31_B_wide:'Come l’originale, ma salta il token se dentro c’è chi l’ha creato o un gruppo di wallet collegati. Se c’è un wallet furbo punta un po’ di più. Solo prova.',
+ LAB32_A_spec:'Come l’originale, ma esce prima dello stop quando i wallet furbi che erano dentro vendono. Solo prova.',
+ LAB33_B_wide:'Come l’originale, ma esce prima dello stop quando i wallet furbi che erano dentro vendono. Solo prova.',
+ LAB36_X_aggressive:'Come l’originale, ma compra solo token con almeno 50.000 $ di liquidità. Solo prova.',
+ LAB37_P_pump:'Come l’originale, ma compra solo token con almeno 50.000 $ di liquidità. Solo prova.',
+ LAB38_A_spec:'Come l’originale, ma compra solo token con almeno 50.000 $ di liquidità. Solo prova.',
+ LAB39_B_wide:'Come l’originale, ma compra solo token con almeno 50.000 $ di liquidità. Solo prova.',
+ LAB40_S_scalp:'Come lo Scalping, ma non compra se la moneta è già salita più del 13% nell’ultima ora. Solo prova.'
 };
 const EXIT_MJ={flat_eod:'chiusura di fine giornata',meteo_off:'spento dal Meteo',rebalance:'ribilanciamento',weak_rs:'coin indebolita',catastrophe:'stop di sicurezza'};
 const EXIT={leader_sell:'wallet copiato ha venduto',whale_sell:'le balene hanno venduto',sentinel_warning:'Sentinel (warning)',sentinel_critical:'Sentinel (critico)',stop_loss:'stop loss',trail_stop:'trailing stop',time_stop:'time stop',take_profit:'take profit',liquidity_collapse:'liquidità crollata'};
@@ -322,13 +338,16 @@ setInterval(setLive, 5000);
 
 // ---------- derived ----------
 function books() { return D.sum ? Object.keys(D.sum.b) : []; }
+const HIDDEN_DUP = /(?:LAB\d+_)?(?:X_aggr_sentinel|C_spec_4h)/;
 function hiddenBook(b) {
+  if (b && /^(?:LAB\d+_)?(?:X_aggr_sentinel|C_spec_4h)$/.test(b)) return true;
   const v = bk(b);
   if (!v) return false;
   if (v.duplicate_of) return true;
-  if (v.base && v.base !== b) { const bv = bk(v.base); if (bv && bv.duplicate_of) return true; }
+  if (v.base && (/^(?:LAB\d+_)?(?:X_aggr_sentinel|C_spec_4h)$/.test(v.base) || v.base !== b && (bk(v.base) || {}).duplicate_of)) return true;
   return false;
 }
+function mentionsHiddenBook(s) { return HIDDEN_DUP.test(s || ''); }
 function visibleBooks() { return books().filter(b => !hiddenBook(b)); }
 function hiddenEco(k) {
   const ev = D.sum && D.sum.eco && D.sum.eco[k];
@@ -363,15 +382,29 @@ function bk(b) {
     exclude_from_totals: !!(fl.exclude_from_totals || (b in exclMap)),
     off: fl.off || null, vsBtc: v[12] ?? null, gross: v[13] ?? null, fees: v[14] ?? null, t1h: v[15] ?? null};
 }
-function liveAgents(list) { const ag = D.ag2 || D.ag || {}; return list.filter(k => ag[k]); }   // only agents the desk actually runs
+function liveAgents(list) {
+  const ag = D.ag2 || D.ag || {};
+  return list.filter(k => ag[k] && !(k === 'Sentinel' && hiddenEco('sentinel')));
+}
 function liveLabs() { return [...new Set(Object.keys(D.sum.eco || {}).filter(e => !hiddenEco(e)).flatMap(e => (ECO[e] && ECO[e].labs) || []))]; }
 function ecoOf(b) { const v = bk(b); const base = (v && v.base) || b; for (const [k, e] of Object.entries(D.sum.eco || {})) if (e[1].includes(base)) return k; return null; }
-function booksOf(e) { if (e === 'paused') return pausedBooks(); return visibleBooks().filter(b => ecoOf(b) === e); }
+function booksOf(e) { if (e === 'paused') return pausedBooks(); return visibleBooks().filter(b => ecoOf(b) === e && !bk(b).paused); }
 function mainBooks() { return visibleBooks().filter(b => bk(b) && !bk(b).lab); }
 function pausedBooks() { return mainBooks().filter(b => bk(b).paused); }
 function activeBooks() { return mainBooks().filter(b => !bk(b).paused); }
 function includedBooks() { return mainBooks().filter(b => !bk(b).exclude_from_totals); }
-function ecoPaused(k) { const bs = (D.sum.eco[k] && D.sum.eco[k][1] || []).filter(b => D.sum.b[b] && !bk(b).lab); return bs.length > 0 && bs.every(b => bk(b).paused); }
+function ecoLiveBooks(k) {
+  const mains = visibleBooks().filter(b => ecoOf(b) === k && !bk(b).lab && !bk(b).paused);
+  if (mains.length) return mains;
+  return visibleBooks().filter(b => ecoOf(b) === k && bk(b).lab && !bk(b).paused);
+}
+function ecoPaused(k) {
+  const ev = D.sum && D.sum.eco && D.sum.eco[k];
+  const mains = (ev && ev[1] || []).filter(b => D.sum.b[b] && bk(b) && !bk(b).lab && !hiddenBook(b));
+  if (!(mains.length > 0 && mains.every(b => bk(b).paused))) return false;
+  // Major scalping: originals paused, low-fee twins still run — keep the group visible
+  return !(k === 'm_scalp' && ecoLiveBooks(k).length);
+}
 function deskTotals() {
   const t = D.sum && D.sum.tot, s0 = D.sum.s0;
   if (t && t.length >= 3 && t[2]) return {eq: t[0], pct: t[1], n: t[2], start: t[3] != null ? t[3] : s0 * t[2]};
@@ -419,7 +452,8 @@ function oldToNew(a) { return [a[0], a[1], a[2], 'info', a[3], null, [], null, 1
 function feedLines(e) {
   const f = D.f2 && D.f2.f ? D.f2.f : ((D.feed && D.feed.f) || []).map(oldToNew);
   const vis = x => !x[7] || !x[7].length || x[7].some(eco => !hiddenEco(eco));
-  return (e ? f.filter(x => !x[7] || x[7].includes(e)) : f).filter(vis).slice(0, e ? 40 : 60);
+  const clean = x => !hiddenBook(x[5]) && !mentionsHiddenBook(x[4]) && !(x[7] || []).some(hiddenEco);
+  return (e ? f.filter(x => !x[7] || x[7].includes(e)) : f).filter(vis).filter(clean).slice(0, e ? 40 : 60);
 }
 const lk = x => (x[8] ? 'o' : '') + x[0];   // old-format lines get their own key so v2 lines replace them
 function lineHTML(x, fresh) {
@@ -625,8 +659,9 @@ function agentsCard(k, list, title) {
     const fresh = x && lastAg[a] != null && lastAg[a] !== x[0];
     if (x) lastAg[a] = x[0];
     const kc = x ? (KIND[x[1]] || KIND.info)[1] : '#5b636e';
-    const body = x && x[2] ? `${logo(x[3])}<span class=tx>${esc(x[2].replace(BIDI, ''))}</span>${pills(x[4], 2)}${rt(x[0])}`
-      : old[a] && old[a][1] ? `<span class=tx>${esc(old[a][1])}</span>${rt(old[a][0])}` : `<span class="tx mut">nessuna azione ancora</span>`;
+    const msg = x && x[2] && !mentionsHiddenBook(x[2]) ? x[2] : (old[a] && old[a][1] && !mentionsHiddenBook(old[a][1]) ? old[a][1] : '');
+    const body = msg && x && x[2] && !mentionsHiddenBook(x[2]) ? `${logo(x[3])}<span class=tx>${esc(x[2].replace(BIDI, ''))}</span>${pills(x[4], 2)}${rt(x[0])}`
+      : msg ? `<span class=tx>${esc(msg)}</span>${rt((old[a] || [])[0])}` : `<span class="tx mut">nessuna azione ancora</span>`;
     return `<div class="arow${fresh ? ' flash' : ''}" style="--kc:${kc}" title="${esc((role || nm) + (x && x[5] ? ' · ' + x[5] : ''))}"><span class=ic style="background:${c}1a;color:${c}">${svg(a)}</span><div class=pl><div class=pt><b>${esc(nm)}</b>${role ? `<small>${esc(role)}</small>` : ''}</div><div class=abody>${body}</div></div></div>`;
   }).join('');
   const titleHtml = `${title}<span class=cnt>${list.length} agenti</span>`;
@@ -673,7 +708,7 @@ function positionsCard(k, ps, showBook) {
   return [k, `<div class=card><h3>Posizioni aperte<span class=cnt>${ps.length ? ps.length + (ps.length === 1 ? ' aperta' : ' aperte') + (DESK === 'major' ? ' · prezzi live' : ' · prezzi ogni 2 s') : ''}</span></h3>${ps.length ? rows : '<div class=empty>Nessuna posizione aperta in questo momento.</div>'}</div>`];
 }
 function tradesCard(k, bs) {
-  const tr = (D.tr && D.tr.t || []).filter(t => !bs || bs.includes(t[0])).slice(0, 15);
+  const tr = (D.tr && D.tr.t || []).filter(t => !hiddenBook(t[0]) && (!bs || bs.includes(t[0]))).slice(0, 15);
   const inner = tr.length ? tr.map(t => { const kk = t[3] >= 0 ? 'tp' : (/stop/.test(t[5]) ? 'stop' : 'sell');
     return `<div class=trow style="--kc:${KIND[kk][1]}">${logo(t[1])}<div class=pl><div class=pt><b>${esc((t[1] || '').replace(BIDI, ''))}</b><small>${esc(EXIT[t[5]] || t[5])}${bs && bs.length === 1 ? '' : ' · ' + esc((BOOK_NAME[t[0]] || t[0]).split(' · ')[0])}</small></div><div class=pm>${dt(t[2])}</div></div>
       <div class=pr><span class="pp ${cls(t[3])}">${sg(t[4])}${f(t[4], 1)}%</span><small class=${cls(t[3])}>${sg(t[3])}${E(t[3])}</small></div></div>`; }).join('')
@@ -777,7 +812,7 @@ function ecoRow(k, e, bs, s0, ps, extra) {
   const ww = bs.reduce((a, b) => a + bk(b).w, 0), ll = bs.reduce((a, b) => a + bk(b).l, 0), op = ps.filter(x => bs.includes(x.book)).length;
   const dup = bs.some(b => bk(b).exclude_from_totals);
   const note = extra || (dup ? 'duplicato, escluso dal totale' : (bs.length > 1 ? bs.length + ' portafogli · ' : '') + `V/P ${ww}/${ll} · ${op} aperte`);
-  return `<div class="eco${extra ? ' paused' : ''}${dup ? ' dup' : ''}" data-t="${k}"><div class=en><b>${esc(e[0])}</b><small>${esc(note)}</small></div>${spark(totalSeries(bs), eq >= st)}<div class=ev>${E(eq, 0)}<small class=${cls(p)}>${sg(p)}${f(p)}%</small></div></div>`;
+  return `<div class="eco${extra && /^in pausa/.test(extra) ? ' paused' : ''}${dup ? ' dup' : ''}" data-t="${k}"><div class=en><b>${esc(e[0])}</b><small>${esc(note)}</small></div>${spark(totalSeries(bs), eq >= st)}<div class=ev>${E(eq, 0)}<small class=${cls(p)}>${sg(p)}${f(p)}%</small></div></div>`;
 }
 function renderOverview() {
   const inc = includedBooks(), s0 = D.sum.s0, tot = deskTotals();
@@ -785,7 +820,13 @@ function renderOverview() {
   const w = inc.reduce((a, b) => a + bk(b).w, 0), l = inc.reduce((a, b) => a + bk(b).l, 0), cl = inc.reduce((a, b) => a + bk(b).closed, 0);
   const ps = positions();
   const activeRows = Object.entries(D.sum.eco).filter(([k]) => !ecoPaused(k) && !hiddenEco(k)).map(([k, e]) => {
-    const bs = e[1].filter(b => D.sum.b[b] && !bk(b).lab && !hiddenBook(b)); return ecoRow(k, e, bs, s0, ps);
+    const mains = e[1].filter(b => D.sum.b[b] && !bk(b).lab && !hiddenBook(b) && !bk(b).paused);
+    if (mains.length) return ecoRow(k, e, mains, s0, ps);
+    if (k === 'm_scalp') {
+      const labs = ecoLiveBooks(k);
+      return ecoRow(k, e, labs, s0, ps, 'originali in pausa · solo versioni a commissioni basse');
+    }
+    return '';
   }).join('');
   const pb = pausedBooks();
   const pauseRows = pb.length ? pb.map(b => {
@@ -819,8 +860,10 @@ function renderEco(e) {
   const desc = isPause
     ? (ECO.paused.desc + (B.paused_reason ? ' Motivo: ' + B.paused_reason + '.' : ''))
     : bookDesc(b);
+  const scalpPaused = e === 'm_scalp' && pausedBooks().some(x => ecoOf(x) === 'm_scalp');
   const banner = isPause ? `<div class="pause-banner">In pausa · niente nuovi ingressi · le posizioni aperte restano in gestione</div>`
-    : (B && B.off ? `<div class="pause-banner">Fermo ora: ${esc(B.off)}</div>` : '');
+    : (B && B.off ? `<div class="pause-banner">Fermo ora: ${esc(B.off)}</div>`
+    : (scalpPaused ? `<div class="pause-banner">Gli scalper normali sono in pausa. Qui vedi solo le versioni a commissioni basse.</div>` : ''));
   const dupNote = '';
   patch([
     [p + 'desc', `<div class=intro>${banner}${dupNote}<div class=desc>${esc(desc)}</div>${bs.length > 1 ? '<div class=chips></div>' : ''}</div>`,
@@ -961,7 +1004,8 @@ function renderTabs() {
   const el = $('tabs'); if (!el || !D.sum) return;
   const open = openMain();
   const ecos = Object.entries(D.sum.eco).map(([k, ev]) => {
-    const bs = ev[1].filter(b => D.sum.b[b] && !bk(b).lab && !hiddenBook(b));
+    let bs = ev[1].filter(b => D.sum.b[b] && !bk(b).lab && !hiddenBook(b) && !bk(b).paused);
+    if (!bs.length && k === 'm_scalp') bs = ecoLiveBooks(k);
     const eq = bs.reduce((a, b) => a + bk(b).eq, 0), st = D.sum.s0 * bs.length;
     const pct = st ? (eq / st - 1) * 100 : null;
     return {k, label: ev[0], pct, open: bs.some(b => open[b]), bits: bs.map(b => bk(b).pct), paused: ecoPaused(k), bs};
