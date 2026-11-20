@@ -671,6 +671,17 @@ function heroCard(k, label, eqUsd, pnlUsd, pct, w, l, extra, foot) {
 }
 const chartCard = id => [id, `<div class="card chartcard"><div class=chartw><canvas id=${id}></canvas></div></div>`];
 const lastAg = {};
+// ---------- v12: Giudice e pagelle (pagelle.json via chiave pg, solo canale MQTT del Meme) ----------
+const PG = () => STORES.meme.D.pg || {};
+const LV = {'niente da dire': ['ancora presto', 'n'], 'indizio': ['indizio', 'a'], 'dimostrato su carta': ['dimostrato su carta', 'g'], 'peggio di zero': ['peggio di zero', 'r']};
+const VT = {buono: ['buono', 'g'], neutro: ['neutro', 'n'], 'da guardare': ['da guardare', 'a'], 'n.d.': ['non misurabile', 'n']};
+function pgBook(b) { return ((PG().strategie || {})[b]) || null; }
+function pgAgent(a) { return (((PG().agenti || {}).meme || {})[a]) || null; }
+function judgeLine(b) {
+  const j = pgBook(b); if (!j) return '';
+  const [t, c] = LV[j.livello] || [j.livello, 'n'];
+  return `<div class=judge><span class="pi ${c}">Giudice · ${esc(t)}</span><span>${esc((j.frase || '').replace(/^(Meme|Major) · [^:]+: /, ''))}</span></div>`;
+}
 function agentsCard(k, list, title) {
   const ag = D.ag2 || {}, old = D.ag || {};
   const rows = list.map(a => {
@@ -681,7 +692,9 @@ function agentsCard(k, list, title) {
     const msg = x && x[2] && !mentionsHiddenBook(x[2]) ? x[2] : (old[a] && old[a][1] && !mentionsHiddenBook(old[a][1]) ? old[a][1] : '');
     const body = msg && x && x[2] && !mentionsHiddenBook(x[2]) ? `${logo(x[3])}<span class=tx>${esc(x[2].replace(BIDI, ''))}</span>${pills(x[4], 2)}${rt(x[0])}`
       : msg ? `<span class=tx>${esc(msg)}</span>${rt((old[a] || [])[0])}` : `<span class="tx mut">nessuna azione ancora</span>`;
-    return `<div class="arow${fresh ? ' flash' : ''}" style="--kc:${kc}" title="${esc((role || nm) + (x && x[5] ? ' · ' + x[5] : ''))}"><span class=ic style="background:${c}1a;color:${c}">${svg(a)}</span><div class=pl><div class=pt><b>${esc(nm)}</b>${role ? `<small>${esc(role)}</small>` : ''}</div><div class=abody>${body}</div></div></div>`;
+    const pv = DESK === 'meme' ? pgAgent(a) : null, vv = pv && (VT[pv.voto] || [pv.voto, 'n']);
+    const pgl = pv ? `<div class=pgl><span class="pi ${vv[1]}">pagella · ${esc(vv[0])}</span><span>${esc(pv.frase || '')}</span></div>` : '';
+    return `<div class="arow${fresh ? ' flash' : ''}" style="--kc:${kc}" title="${esc((role || nm) + (x && x[5] ? ' · ' + x[5] : ''))}"><span class=ic style="background:${c}1a;color:${c}">${svg(a)}</span><div class=pl><div class=pt><b>${esc(nm)}</b>${role ? `<small>${esc(role)}</small>` : ''}</div><div class=abody>${body}</div>${pgl}</div></div>`;
   }).join('');
   const titleHtml = `${title}<span class=cnt>${list.length} agenti</span>`;
   return [k, `<div class=card><h3>${titleHtml}</h3><div class="scroll5 aglist">${rows}</div></div>`, {after: afterScroll('.arow'), feed: el => patchList(el, '.arow', rows, titleHtml)}];
@@ -831,7 +844,8 @@ function ecoRow(k, e, bs, s0, ps, extra) {
   const eq = bs.reduce((a, b) => a + bk(b).eq, 0), st = s0 * bs.length, p = (eq / st - 1) * 100;
   const ww = bs.reduce((a, b) => a + bk(b).w, 0), ll = bs.reduce((a, b) => a + bk(b).l, 0), op = ps.filter(x => bs.includes(x.book)).length;
   const dup = bs.some(b => bk(b).exclude_from_totals);
-  const note = extra || (dup ? 'duplicato, escluso dal totale' : (bs.length > 1 ? bs.length + ' portafogli · ' : '') + `V/P ${ww}/${ll} · ${op} aperte`);
+  const jb = bs.length === 1 && pgBook(bs[0]), jl = jb ? ' · Giudice: ' + (LV[jb.livello] || [jb.livello])[0] : '';
+  const note = extra || (dup ? 'duplicato, escluso dal totale' : (bs.length > 1 ? bs.length + ' portafogli · ' : '') + `V/P ${ww}/${ll} · ${op} aperte` + jl);
   return `<div class="eco${extra && /^in pausa/.test(extra) ? ' paused' : ''}${dup ? ' dup' : ''}" data-t="${k}"><div class=en><b>${esc(e[0])}</b><small>${esc(note)}</small></div>${spark(totalSeries(bs), eq >= st)}<div class=ev>${E(eq, 0)}<small class=${cls(p)}>${sg(p)}${f(p)}%</small></div></div>`;
 }
 function histLine() {
@@ -935,7 +949,7 @@ function renderEco(e) {
   patch([
     [p + 'desc', `<div class=intro>${banner}${dupNote}<div class=desc>${esc(desc)}</div>${bs.length > 1 ? '<div class=chips></div>' : ''}</div>`,
       {after: el => syncChips(el, e, bs, b), feed: el => syncChips(el, e, bs, b)}],
-    heroCard(hk, 'In prova · ' + esc(name), B.eq, B.eq - s0, B.pct, B.w, B.l, [['% vinti', B.wr == null ? '–' : f(B.wr, 0) + '%'], ['Calo max', `<span class=${B.dd < 0 ? 'neg' : 'neu'}>${f(B.dd, 1)}%</span>`], ['Chiusi', B.closed]]),
+    heroCard(hk, 'In prova · ' + esc(name), B.eq, B.eq - s0, B.pct, B.w, B.l, [['% vinti', B.wr == null ? '–' : f(B.wr, 0) + '%'], ['Calo max', `<span class=${B.dd < 0 ? 'neg' : 'neu'}>${f(B.dd, 1)}%</span>`], ['Chiusi', B.closed]], judgeLine(b)),
     chartCard(ck),
     positionsCard(p + 'pos', ps, false),
     feedCard(p + 'feed', e === 'paused' ? [...new Map(pausedBooks().flatMap(bb => feedLines(ecoOf(bb))).map(x => [x[0], x])).values()].sort((a, c) => c[0] - a[0]).slice(0, 40) : feedLines(e), 'Attività live', e === 'paused' ? 'In pausa' : esc((D.sum.eco[e] || ['', []])[0])),
