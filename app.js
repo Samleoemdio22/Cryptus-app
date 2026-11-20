@@ -380,7 +380,7 @@ function bookDesc(b) {
     return 'Prova in parallelo: ' + lab + '. Non conta nel totale.';
   }
   const e = ecoOf(b);
-  return (ECO[e] && ECO[e].desc) || 'Portafoglio di prova, con i dati dal vivo.';
+  return (ECO[e] && ECO[e].desc) || ((D.sum.eco[e] || [])[2]) || 'Portafoglio di prova, con i dati dal vivo.';
 }
 function bk(b) {
   const v = D.sum && D.sum.b && D.sum.b[b];
@@ -392,7 +392,7 @@ function bk(b) {
     paused: !!(fl.paused || (b in pausedMap)), paused_reason: fl.paused_reason || pausedMap[b] || null,
     duplicate_of: fl.duplicate_of || (!fl.retired && typeof exclMap[b] === 'string' && /^duplicato/.test(exclMap[b]) ? exclMap[b] : null),
     exclude_from_totals: !!(fl.exclude_from_totals || (b in exclMap)),
-    off: fl.off || null, retired: fl.retired || null, vsBtc: v[12] ?? null, gross: v[13] ?? null, fees: v[14] ?? null, t1h: v[15] ?? null};
+    off: fl.off || null, retired: fl.retired || null, observation: fl.observation || null, vsBtc: v[12] ?? null, gross: v[13] ?? null, fees: v[14] ?? null, t1h: v[15] ?? null};
 }
 function liveAgents(list) {
   const ag = D.ag2 || D.ag || {};
@@ -850,9 +850,9 @@ function ecoRow(k, e, bs, s0, ps, extra) {
   if (!bs.length) return '';
   const eq = bs.reduce((a, b) => a + bk(b).eq, 0), st = s0 * bs.length, p = (eq / st - 1) * 100;
   const ww = bs.reduce((a, b) => a + bk(b).w, 0), ll = bs.reduce((a, b) => a + bk(b).l, 0), op = ps.filter(x => bs.includes(x.book)).length;
-  const dup = bs.some(b => bk(b).exclude_from_totals);
+  const dup = bs.some(b => bk(b).exclude_from_totals && !bk(b).observation), obs = bs.length === 1 && bk(bs[0]).observation;
   const jb = bs.length === 1 && pgBook(bs[0]), jl = jb ? ' · Giudice: ' + (LV[jb.livello] || [jb.livello])[0] : '';
-  const note = extra || (dup ? 'duplicato, escluso dal totale' : (bs.length > 1 ? bs.length + ' portafogli · ' : '') + `V/P ${ww}/${ll} · ${op} aperte` + jl);
+  const note = extra || (dup ? 'duplicato, escluso dal totale' : (obs ? 'in osservazione, fuori dal totale · ' : '') + (bs.length > 1 ? bs.length + ' portafogli · ' : '') + `V/P ${ww}/${ll} · ${op} aperte` + jl);
   return `<div class="eco${extra && /^in pausa/.test(extra) ? ' paused' : ''}${dup ? ' dup' : ''}" data-t="${k}"><div class=en><b>${esc(e[0])}</b><small>${esc(note)}</small></div>${spark(totalSeries(bs), eq >= st)}<div class=ev>${E(eq, 0)}<small class=${cls(p)}>${sg(p)}${f(p)}%</small></div></div>`;
 }
 function histLine() {
@@ -960,7 +960,7 @@ function renderEco(e) {
     chartCard(ck),
     positionsCard(p + 'pos', ps, false),
     feedCard(p + 'feed', e === 'paused' ? [...new Map(pausedBooks().flatMap(bb => feedLines(ecoOf(bb))).map(x => [x[0], x])).values()].sort((a, c) => c[0] - a[0]).slice(0, 40) : feedLines(e), 'Attività live', e === 'paused' ? 'In pausa' : esc((D.sum.eco[e] || ['', []])[0])),
-    agentsCard(p + 'ag', liveAgents(ECO[e] ? ECO[e].agents : allAgents()), 'Catena di agenti'),
+    agentsCard(p + 'ag', liveAgents(ECO[e] ? ECO[e].agents : (((D.sum.eco[e] || [])[3] || []).length ? D.sum.eco[e][3] : allAgents())), 'Catena di agenti'),
     overshootNote(p + 'ov', B),
     DESK === 'major' ? pagellaCard(p + 'pg', b, B) : null,
     DESK === 'major' && e === 'm_scalp' ? scalpCard(p + 'sc') : null,
