@@ -676,7 +676,14 @@ const PG = () => STORES.meme.D.pg || {};
 const LV = {'niente da dire': ['ancora presto', 'n'], 'indizio': ['indizio', 'a'], 'dimostrato su carta': ['dimostrato su carta', 'g'], 'peggio di zero': ['peggio di zero', 'r']};
 const VT = {buono: ['buono', 'g'], neutro: ['neutro', 'n'], 'da guardare': ['da guardare', 'a'], 'n.d.': ['non misurabile', 'n']};
 function pgBook(b) { return ((PG().strategie || {})[b]) || null; }
-function pgAgent(a) { return (((PG().agenti || {}).meme || {})[a]) || null; }
+function pgAgent(a) { return (((PG().agenti || {})[DESK] || {})[a]) || null; }
+function tesCard(k) {
+  const t = (((PG().agenti || {}).meme || {}).Tesoriere); if (!t) return null;
+  const ex = Object.entries(t.esposizione || {}).slice(0, 6), mx = Math.max(1, ...ex.map(e => Math.abs(e[1])));
+  const vv = VT[t.voto] || [t.voto, 'n'];
+  const rows = ex.map(([a, v]) => `<div class=tesr><span>${esc(a)}</span><i class=${v >= 0 ? 'pos' : 'neg'} style="width:${Math.round(Math.abs(v) / mx * 100)}%"></i><b class=${v >= 0 ? 'pos' : 'neg'}>${v >= 0 ? 'compra' : 'vende'} ${E(Math.abs(v), 0)}</b></div>`).join('');
+  return [k, `<div class="card tescard"><h3>Tesoriere<span class=cnt>i due desk insieme</span></h3><div class=pgl style="margin:0 0 10px"><span class="pi ${vv[1]}">${esc(vv[0])}</span><span>${esc(t.frase || '')}</span></div>${rows || '<div class=empty>Nessuna posizione aperta.</div>'}</div>`];
+}
 function judgeLine(b) {
   const j = pgBook(b); if (!j) return '';
   const [t, c] = LV[j.livello] || [j.livello, 'n'];
@@ -692,7 +699,7 @@ function agentsCard(k, list, title) {
     const msg = x && x[2] && !mentionsHiddenBook(x[2]) ? x[2] : (old[a] && old[a][1] && !mentionsHiddenBook(old[a][1]) ? old[a][1] : '');
     const body = msg && x && x[2] && !mentionsHiddenBook(x[2]) ? `${logo(x[3])}<span class=tx>${esc(x[2].replace(BIDI, ''))}</span>${pills(x[4], 2)}${rt(x[0])}`
       : msg ? `<span class=tx>${esc(msg)}</span>${rt((old[a] || [])[0])}` : `<span class="tx mut">nessuna azione ancora</span>`;
-    const pv = DESK === 'meme' ? pgAgent(a) : null, vv = pv && (VT[pv.voto] || [pv.voto, 'n']);
+    const pv = pgAgent(a), vv = pv && (VT[pv.voto] || [pv.voto, 'n']);
     const pgl = pv ? `<div class=pgl><span class="pi ${vv[1]}">pagella · ${esc(vv[0])}</span><span>${esc(pv.frase || '')}</span></div>` : '';
     return `<div class="arow${fresh ? ' flash' : ''}" style="--kc:${kc}" title="${esc((role || nm) + (x && x[5] ? ' · ' + x[5] : ''))}"><span class=ic style="background:${c}1a;color:${c}">${svg(a)}</span><div class=pl><div class=pt><b>${esc(nm)}</b>${role ? `<small>${esc(role)}</small>` : ''}</div><div class=abody>${body}</div>${pgl}</div></div>`;
   }).join('');
@@ -924,7 +931,7 @@ function renderOverview() {
     feedCard('o_feed', feedLines(null), 'Attività live', 'tutti gli agenti'),
     agentsCard('o_ag', liveAgents(allAgents()), 'Catena di agenti'),
     empty ? null : tradesCard('o_tr', inc.concat(pb)), liveLabs().length ? labCard('o_lab', liveLabs(), null) : null,
-    retiredCard('o_ret'), DESK === 'major' || empty ? null : killsCard('o_kr')].filter(Boolean));
+    tesCard('o_tes'), retiredCard('o_ret'), DESK === 'major' || empty ? null : killsCard('o_kr')].filter(Boolean));
   if (empty) return;
   afterHero(hk);
   const ser = totalSeries(inc); const up = !ser.length || ser[ser.length - 1][1] >= startT;
