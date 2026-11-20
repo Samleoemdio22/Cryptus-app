@@ -53,16 +53,16 @@ const ICON={Scout:"<circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/>",F
 Object.assign(ICON, {Pagellista: "<path d='M9 3h6l1 2h3v16H5V5h3z'/><path d='M9 12l2 2 4-4'/>", 'Anti-inseguimento': "<circle cx='12' cy='12' r='9'/><path d='M5.6 5.6l12.8 12.8'/>",
  'Segugio lento': "<path d='M3 17l6-6 4 4 8-8'/><path d='M14 7h7v7'/>", Esattore: "<circle cx='12' cy='12' r='9'/><path d='M12 7v10M9 9.5c0-1.4 1.3-2.5 3-2.5s3 1 3 2.2c0 2.8-6 1.8-6 4.6 0 1.3 1.3 2.2 3 2.2s3-1.1 3-2.5'/>"});
 const BOOK_NAME={A_spec:'Prudente A · chiude a −6%',B_wide:'Prudente B · chiude a −12%',C_spec_4h:'Prudente C · chiude dopo 4 ore',D_wide_noregime:'Prudente D · anche a mercato debole',
- X_aggressive:'Aggressivo',X_aggr_sentinel:'Aggressivo + Sentinel',S_scalp:'Scalping',P_pump:'Pump organici · rialzi veri',E_explore:'Esploratore · token più nuovi e piccoli',W_whale:'Balene · almeno 2 portafogli bravi insieme',W2_balene:'Balene 2.0 · copia chi fa guadagnare chi copia'};
+ X_aggressive:'Aggressivo',X_aggr_sentinel:'Aggressivo + Sentinel',S_scalp:'Scalping',P_pump:'Pump organici · rialzi veri',E_explore:'Esploratore · token più nuovi e piccoli',W_whale:'Balene · almeno 2 portafogli bravi insieme',W2_balene:'Balene 2.0 · copia chi fa guadagnare chi copia',S2_sopravvissuti:'Sopravvissuti · token maturi che salgono piano',R2_rimbalzo:'Rimbalzo · dopo un crollo, quando i compratori tornano'};
 const BOOK_SHORT={A_spec:'Prudente A',B_wide:'Prudente B',C_spec_4h:'Prudente C',D_wide_noregime:'Prudente D',
- X_aggressive:'Aggressivo',X_aggr_sentinel:'Sentinel',S_scalp:'Scalping',P_pump:'Pump',E_explore:'Esploratore',W_whale:'Balene',W2_balene:'Balene 2.0'};
+ X_aggressive:'Aggressivo',X_aggr_sentinel:'Sentinel',S_scalp:'Scalping',P_pump:'Pump',E_explore:'Esploratore',W_whale:'Balene',W2_balene:'Balene 2.0',S2_sopravvissuti:'Sopravvissuti',R2_rimbalzo:'Rimbalzo'};
 const shortBook = b => BOOK_SHORT[b] || (BOOK_NAME[b] || b).split(' · ')[0];
 Object.assign(BOOK_NAME, {M2_day:'Day trading · rotture all’apertura', M3_trend:'Trend · pochi trade lunghi', M4_range:'Rimbalzo · solo mercato a zig-zag', M5_rot:'Rotazione · le più forti contro Bitcoin',
  M6_contra:'Contrarian · contro la folla', M7_dca:'Accumulo · un po’ ogni giorno', M8_astra:'Trend Astra · incroci delle medie giornaliere',
  M9_lento:'Trend lento · 16 monete, solo quando salgono', M10_funding:'Funding · incassa senza scommettere sul prezzo'});
 Object.assign(BOOK_SHORT, {M2_day:'Day trading', M3_trend:'Trend', M4_range:'Rimbalzo', M5_rot:'Rotazione', M6_contra:'Contrarian', M7_dca:'Accumulo', M8_astra:'Trend Astra', M9_lento:'Trend lento', M10_funding:'Funding'});
 const BOOK_TINY={A_spec:'PrA',B_wide:'PrB',C_spec_4h:'PrC',D_wide_noregime:'PrD',
- X_aggressive:'Agg',X_aggr_sentinel:'Sen',S_scalp:'Scl',P_pump:'Pmp',E_explore:'Esp',W_whale:'Bal',W2_balene:'B2'};
+ X_aggressive:'Agg',X_aggr_sentinel:'Sen',S_scalp:'Scl',P_pump:'Pmp',E_explore:'Esp',W_whale:'Bal',W2_balene:'B2',S2_sopravvissuti:'Sop',R2_rimbalzo:'Rim'};
 Object.assign(BOOK_TINY, {M2_day:'Day', M3_trend:'Trd', M4_range:'Rmb', M5_rot:'Rot', M6_contra:'Ctr', M7_dca:'Acc', M8_astra:'Ast', M9_lento:'Len', M10_funding:'Fun'});
 for (const c of ['BTC','ETH','SOL','BNB','XRP','DOGE','ZEC','HYPE']) {
   BOOK_NAME['SC_' + c] = 'Scalping ' + c; BOOK_SHORT['SC_' + c] = c; BOOK_TINY['SC_' + c] = c.slice(0, 4);
@@ -109,6 +109,8 @@ const ECO={
  m_dca:{agents:['Rate','Meteo','Executor','Pagella','Lab'],labs:['Lab M7_dca'],major:1,desc:'Ogni giorno compra un po’ di Bitcoin e Ethereum: di più quando c’è paura, di meno quando tutti sono euforici. Non vende mai.'},
  m_astra:{agents:['Incroci','Executor','Risk','Derivati','Lab'],labs:['Lab M8_astra'],major:1,desc:'Entra una volta al giorno, al rialzo o al ribasso, quando la media a 20 giorni incrocia quella a 50 sulle 20 monete più scambiate. Al massimo due posizioni nella stessa direzione, e una sola tra Bitcoin, Ethereum e Solana perché si muovono insieme.'},
  balene2:{agents:['Registratore','Pagellista','Sentinella','Anti-inseguimento','Filter','Executor','Risk'],labs:[],desc:'Ogni 2 ore il Pagellista sceglie 30 portafogli che negli ultimi giorni hanno fatto guadagnare chi li copiava. Quando uno di loro compra, la copia parte solo se il prezzo non è già salito più del 5% e il token passa i controlli. Esce con regole sue, entro 4 ore. È una prova: deve dimostrarsi su 100 trade.'},
+ sopravvissuti:{agents:['Scout','Filter','Analyst','Executor','Risk'],labs:[],desc:'Compra solo token che hanno almeno un giorno, sono liquidi, hanno i possessori sparsi e salgono piano, senza pompaggi. Li tiene fino a un giorno. È una prova: per ora i dati non dicono che funzioni.'},
+ rimbalzo:{agents:['Scout','Filter','Analyst','Executor','Risk'],labs:[],desc:'Quando un token sano crolla in un’ora, aspetta il primo segno che i compratori tornano, entra con una puntata piccola ed esce entro un’ora (obiettivo +8%, stop −8%). È una prova con evidenza debole.'},
  m_lento:{agents:['Segugio lento','Executor','Risk'],labs:[],major:1,desc:'Ogni notte guarda 16 monete grandi: tiene solo quelle che salgono da 30 e da 90 giorni e stanno sopra la media, con più soldi su quelle più tranquille. Quando il mercato scende resta in cassa, anche per mesi.'},
  m_funding:{agents:['Esattore','Executor'],labs:[],major:1,desc:'Compra Bitcoin ed Ether e allo stesso tempo li vende sul perpetuo: il prezzo si annulla e resta il funding che si incassa ogni 8 ore. È il rendimento minimo da battere, non una scommessa.'},
  paused:{agents:['Scout','Filter','Analyst','Executor','Risk','Lab'],labs:[],desc:'Niente nuovi ingressi. Le posizioni già aperte seguono le regole di uscita, e si può riaccendere quando vuoi.'}};
