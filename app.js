@@ -31,7 +31,8 @@ const A = {Scout:['Scout','#5aa9ff','cerca token nuovi'],Filter:['Filter','#ff4d
  Flusso:['Flusso','#2fe0d2','guarda chi sta comprando e vendendo adesso'],Commissioni:['Commissioni','#ff4d64','blocca il trade se le spese mangerebbero il guadagno'],Sessioni:['Sessioni','#5aa9ff','entra quando Londra o New York aprono con forza'],
  Segugio:['Segugio','#1fe08a','cerca i trend che stanno partendo'],Bande:['Bande','#f6c453','compra in basso e vende in alto, quando il mercato va a zig-zag'],Forza:['Forza','#a78bfa','sceglie le monete che battono Bitcoin'],
  Folla:['Folla','#ff6b3d','entra contro la folla quando esagera'],Rate:['Rate','#7dd3fc','compra un po’ ogni giorno'],
- Incroci:['Incroci','#1fe08a','entra quando la media veloce incrocia quella lenta']};
+ Incroci:['Incroci','#1fe08a','entra quando la media veloce incrocia quella lenta'],
+ 'Segugio lento':['Segugio lento','#7dd3fc','guarda il trend di ogni giorno su 16 monete'],Esattore:['Esattore','#e2c044','incassa il funding ogni 8 ore']};
 const ICON={Scout:"<circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/>",Filter:"<path d='M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z'/><path d='M9 12l2 2 4-4'/>",
  Analyst:"<path d='M4 19V9M10 19V5M16 19v-7M22 19H2'/>",Executor:"<path d='M13 2L4 14h7l-1 8 9-12h-7z'/>",Risk:"<circle cx='12' cy='12' r='9'/><circle cx='12' cy='12' r='5'/><circle cx='12' cy='12' r='1'/>",
  Logger:"<path d='M5 4h11l3 3v13H5z'/><path d='M9 10h6M9 14h6M9 18h4'/>",Regime:"<path d='M3 12h4l3-8 4 16 3-8h4'/>",Scalp:"<circle cx='12' cy='13' r='8'/><path d='M12 9v4l2.5 2.5M9 2h6'/>",
@@ -54,11 +55,12 @@ const BOOK_SHORT={A_spec:'Prudente A',B_wide:'Prudente B',C_spec_4h:'Prudente C'
  X_aggressive:'Aggressivo',X_aggr_sentinel:'Sentinel',S_scalp:'Scalping',P_pump:'Pump',E_explore:'Esploratore',W_whale:'Balene'};
 const shortBook = b => BOOK_SHORT[b] || (BOOK_NAME[b] || b).split(' · ')[0];
 Object.assign(BOOK_NAME, {M2_day:'Day trading · rotture all’apertura', M3_trend:'Trend · pochi trade lunghi', M4_range:'Rimbalzo · solo mercato a zig-zag', M5_rot:'Rotazione · le più forti contro Bitcoin',
- M6_contra:'Contrarian · contro la folla', M7_dca:'Accumulo · un po’ ogni giorno', M8_astra:'Trend Astra · incroci delle medie giornaliere'});
-Object.assign(BOOK_SHORT, {M2_day:'Day trading', M3_trend:'Trend', M4_range:'Rimbalzo', M5_rot:'Rotazione', M6_contra:'Contrarian', M7_dca:'Accumulo', M8_astra:'Trend Astra'});
+ M6_contra:'Contrarian · contro la folla', M7_dca:'Accumulo · un po’ ogni giorno', M8_astra:'Trend Astra · incroci delle medie giornaliere',
+ M9_lento:'Trend lento · 16 monete, solo quando salgono', M10_funding:'Funding · incassa senza scommettere sul prezzo'});
+Object.assign(BOOK_SHORT, {M2_day:'Day trading', M3_trend:'Trend', M4_range:'Rimbalzo', M5_rot:'Rotazione', M6_contra:'Contrarian', M7_dca:'Accumulo', M8_astra:'Trend Astra', M9_lento:'Trend lento', M10_funding:'Funding'});
 const BOOK_TINY={A_spec:'PrA',B_wide:'PrB',C_spec_4h:'PrC',D_wide_noregime:'PrD',
  X_aggressive:'Agg',X_aggr_sentinel:'Sen',S_scalp:'Scl',P_pump:'Pmp',E_explore:'Esp',W_whale:'Bal'};
-Object.assign(BOOK_TINY, {M2_day:'Day', M3_trend:'Trd', M4_range:'Rmb', M5_rot:'Rot', M6_contra:'Ctr', M7_dca:'Acc', M8_astra:'Ast'});
+Object.assign(BOOK_TINY, {M2_day:'Day', M3_trend:'Trd', M4_range:'Rmb', M5_rot:'Rot', M6_contra:'Ctr', M7_dca:'Acc', M8_astra:'Ast', M9_lento:'Len', M10_funding:'Fun'});
 for (const c of ['BTC','ETH','SOL','BNB','XRP','DOGE','ZEC','HYPE']) {
   BOOK_NAME['SC_' + c] = 'Scalping ' + c; BOOK_SHORT['SC_' + c] = c; BOOK_TINY['SC_' + c] = c.slice(0, 4);
   BOOK_NAME['L_SC_' + c] = 'Lab ' + c + ' · più trade'; BOOK_SHORT['L_SC_' + c] = c + ' +trade'; BOOK_TINY['L_SC_' + c] = c.slice(0, 2) + '+';
@@ -103,6 +105,8 @@ const ECO={
  m_contra:{agents:['Folla','Derivati','Consiglio','Executor','Risk','Lab'],labs:['Lab M6_contra'],major:1,desc:'Entra contro la folla quando ha esagerato, per esempio dopo tanti fallimenti improvvisi tutti da una parte. Resta al massimo un giorno.'},
  m_dca:{agents:['Rate','Meteo','Executor','Pagella','Lab'],labs:['Lab M7_dca'],major:1,desc:'Ogni giorno compra un po’ di Bitcoin e Ethereum: di più quando c’è paura, di meno quando tutti sono euforici. Non vende mai.'},
  m_astra:{agents:['Incroci','Executor','Risk','Derivati','Lab'],labs:['Lab M8_astra'],major:1,desc:'Entra una volta al giorno, al rialzo o al ribasso, quando la media a 20 giorni incrocia quella a 50 sulle 20 monete più scambiate. Al massimo due posizioni nella stessa direzione, e una sola tra Bitcoin, Ethereum e Solana perché si muovono insieme.'},
+ m_lento:{agents:['Segugio lento','Executor','Risk'],labs:[],major:1,desc:'Ogni notte guarda 16 monete grandi: tiene solo quelle che salgono da 30 e da 90 giorni e stanno sopra la media, con più soldi su quelle più tranquille. Quando il mercato scende resta in cassa, anche per mesi.'},
+ m_funding:{agents:['Esattore','Executor'],labs:[],major:1,desc:'Compra Bitcoin ed Ether e allo stesso tempo li vende sul perpetuo: il prezzo si annulla e resta il funding che si incassa ogni 8 ore. È il rendimento minimo da battere, non una scommessa.'},
  paused:{agents:['Scout','Filter','Analyst','Executor','Risk','Lab'],labs:[],desc:'Niente nuovi ingressi. Le posizioni già aperte seguono le regole di uscita, e si può riaccendere quando vuoi.'}};
 const LAB_SHORT={
  LAB4_S_scalp:'Lab 4 · stop più largo',LAB5_X_aggressive:'Lab 5 · più severo sul finto',
@@ -220,7 +224,8 @@ const sg = v => v > 0 ? '+' : '';
 const FX = () => (D.sum && D.sum.fx) || 1.1;
 const eur = u => u / FX();
 const E = (u, d = 2) => (u < 0 ? '−' : '') + '€' + f(Math.abs(eur(u)), d);
-const px = x => x == null ? '–' : Number(x).toPrecision(4);
+const px = x => { if (x == null || isNaN(x)) return '–'; const n = Number(x), a = Math.abs(n);
+  return a >= 1000 ? f(n, 0) : a >= 100 ? f(n, 1) : a >= 1 ? f(n, 2) : n.toPrecision(4).replace('.', ','); };
 const svg = k => `<svg viewBox="0 0 24 24">${ICON[k] || ''}</svg>`;
 const haptic = () => { try { tg && tg.HapticFeedback && tg.HapticFeedback.selectionChanged(); } catch (e) {} };
 
@@ -344,6 +349,7 @@ function hiddenBook(b) {
   const v = bk(b);
   if (!v) return false;
   if (v.duplicate_of) return true;
+  if (v.retired && v.lab) return true;      // gemelli Lab di portafogli ritirati: spariscono
   if (v.base && (/^(?:LAB\d+_)?(?:X_aggr_sentinel|C_spec_4h)$/.test(v.base) || v.base !== b && (bk(v.base) || {}).duplicate_of)) return true;
   return false;
 }
@@ -353,7 +359,7 @@ function hiddenEco(k) {
   const ev = D.sum && D.sum.eco && D.sum.eco[k];
   if (!ev) return false;
   const mains = ev[1].filter(b => D.sum.b[b] && bk(b) && !bk(b).lab);
-  return mains.length > 0 && mains.every(hiddenBook);
+  return mains.length > 0 && mains.every(b => hiddenBook(b) || bk(b).retired);
 }
 function bookDesc(b) {
   if (BOOK_DESC[b]) return BOOK_DESC[b];
@@ -378,9 +384,9 @@ function bk(b) {
   const exclMap = D.sum.excl || {};
   return {eq: v[0], pct: v[1], w: v[2], l: v[3], closed: v[4], wr: v[5], dd: v[6], mult: v[7], lab: v[8], base: v[9], ov: v[10] || [0, null, null],
     paused: !!(fl.paused || (b in pausedMap)), paused_reason: fl.paused_reason || pausedMap[b] || null,
-    duplicate_of: fl.duplicate_of || (typeof exclMap[b] === 'string' ? exclMap[b] : null),
+    duplicate_of: fl.duplicate_of || (!fl.retired && typeof exclMap[b] === 'string' && /^duplicato/.test(exclMap[b]) ? exclMap[b] : null),
     exclude_from_totals: !!(fl.exclude_from_totals || (b in exclMap)),
-    off: fl.off || null, vsBtc: v[12] ?? null, gross: v[13] ?? null, fees: v[14] ?? null, t1h: v[15] ?? null};
+    off: fl.off || null, retired: fl.retired || null, vsBtc: v[12] ?? null, gross: v[13] ?? null, fees: v[14] ?? null, t1h: v[15] ?? null};
 }
 function liveAgents(list) {
   const ag = D.ag2 || D.ag || {};
@@ -389,7 +395,9 @@ function liveAgents(list) {
 function liveLabs() { return [...new Set(Object.keys(D.sum.eco || {}).filter(e => !hiddenEco(e)).flatMap(e => (ECO[e] && ECO[e].labs) || []))]; }
 function ecoOf(b) { const v = bk(b); const base = (v && v.base) || b; for (const [k, e] of Object.entries(D.sum.eco || {})) if (e[1].includes(base)) return k; return null; }
 function booksOf(e) { if (e === 'paused') return pausedBooks(); return visibleBooks().filter(b => ecoOf(b) === e && !bk(b).paused); }
-function mainBooks() { return visibleBooks().filter(b => bk(b) && !bk(b).lab); }
+function mainBooks() { return visibleBooks().filter(b => bk(b) && !bk(b).lab && !bk(b).retired); }
+function retiredBooks() { return visibleBooks().filter(b => bk(b) && !bk(b).lab && bk(b).retired); }
+function histBooks() { return visibleBooks().filter(b => bk(b) && !bk(b).lab); }
 function pausedBooks() { return mainBooks().filter(b => bk(b).paused); }
 function activeBooks() { return mainBooks().filter(b => !bk(b).paused); }
 function includedBooks() { return mainBooks().filter(b => !bk(b).exclude_from_totals); }
@@ -400,7 +408,7 @@ function ecoLiveBooks(k) {
 }
 function ecoPaused(k) {
   const ev = D.sum && D.sum.eco && D.sum.eco[k];
-  const mains = (ev && ev[1] || []).filter(b => D.sum.b[b] && bk(b) && !bk(b).lab && !hiddenBook(b));
+  const mains = (ev && ev[1] || []).filter(b => D.sum.b[b] && bk(b) && !bk(b).lab && !hiddenBook(b) && !bk(b).retired);
   if (!(mains.length > 0 && mains.every(b => bk(b).paused))) return false;
   // Major scalping: originals paused, low-fee twins still run — keep the group visible
   return !(k === 'm_scalp' && ecoLiveBooks(k).length);
@@ -449,10 +457,15 @@ const rt = ts => `<span class=rt data-ts="${ts || 0}">${ts ? ago(ts) : ''}</span
 function fixRt() { document.querySelectorAll('.rt').forEach(el => { const t = +el.dataset.ts; if (t) el.textContent = ago(t); }); }
 setInterval(fixRt, 5000);
 function oldToNew(a) { return [a[0], a[1], a[2], 'info', a[3], null, [], null, 1]; }   // ntfy-only fallback (old line format)
+function dupEco(k) {        // ecosistema nascosto perché doppione (non perché ritirato): le sue righe di feed spariscono
+  const ev = D.sum && D.sum.eco && D.sum.eco[k]; if (!ev) return false;
+  const mains = ev[1].filter(b => D.sum.b[b] && bk(b) && !bk(b).lab);
+  return mains.length > 0 && mains.every(hiddenBook);
+}
 function feedLines(e) {
   const f = D.f2 && D.f2.f ? D.f2.f : ((D.feed && D.feed.f) || []).map(oldToNew);
-  const vis = x => !x[7] || !x[7].length || x[7].some(eco => !hiddenEco(eco));
-  const clean = x => !hiddenBook(x[5]) && !mentionsHiddenBook(x[4]) && !(x[7] || []).some(hiddenEco);
+  const vis = x => !x[7] || !x[7].length || x[7].some(eco => !dupEco(eco));
+  const clean = x => !hiddenBook(x[5]) && !mentionsHiddenBook(x[4]) && !(x[7] || []).every(dupEco);
   return (e ? f.filter(x => !x[7] || x[7].includes(e)) : f).filter(vis).filter(clean).slice(0, e ? 40 : 60);
 }
 const lk = x => (x[8] ? 'o' : '') + x[0];   // old-format lines get their own key so v2 lines replace them
@@ -643,12 +656,12 @@ function sparkMini(ser, up) {
   const pts = ser.map((p, i) => `${(i / (ser.length - 1) * w).toFixed(1)},${(h - 2 - (p[1] - mn) / r * (h - 4)).toFixed(1)}`).join(' ');
   return `<svg class=bspark viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="${up ? '#1fe08a' : '#ff4d64'}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
 }
-function heroCard(k, label, eqUsd, pnlUsd, pct, w, l, extra) {
+function heroCard(k, label, eqUsd, pnlUsd, pct, w, l, extra, foot) {
   const mult = eqUsd / (pnlUsd != null ? eqUsd - pnlUsd : eqUsd);
   // the big number is filled (and tweened) after patching, so tiny equity moves don't rebuild the card
   return [k, `<div class="card hero"><div class=lbl>${label}</div><div class=eq data-n="${eqUsd}">${E(prevVal[k] ?? eqUsd)}</div>
   <div class=pnl><span class="pv ${cls(pnlUsd)}">${sg(pnlUsd)}${E(pnlUsd)}</span><span class="pc ${cls(pnlUsd)}">${sg(pct)}${f(pct)}%</span><span class="badge${mult < 1 ? ' neg' : Math.abs(mult - 1) < 1e-9 ? ' neu' : ''}">${f(mult, 3)}x</span><span class=pnll>Risultato da inizio</span></div>
-  <div class=stats>${[['V / P', `<span class=pos>${w}</span> / <span class=neg>${l}</span>`]].concat(extra).map(([k2, v]) => `<div class=st><div class=k>${k2}</div><div class=v>${v}</div></div>`).join('')}</div></div>`];
+  <div class=stats>${[['V / P', `<span class=pos>${w}</span> / <span class=neg>${l}</span>`]].concat(extra).map(([k2, v]) => `<div class=st><div class=k>${k2}</div><div class=v>${v}</div></div>`).join('')}</div>${foot || ''}</div>`];
 }
 const chartCard = id => [id, `<div class="card chartcard"><div class=chartw><canvas id=${id}></canvas></div></div>`];
 const lastAg = {};
@@ -746,9 +759,10 @@ function majorCard(k) {
   const m = x.meteo || {}, d = x.der || {}, r = REG[m.label] || [m.lbl || 'in calcolo', 'neu'];
   const cal = ((x.cal && x.cal.next) || []).slice(0, 3).map(e => `<div class=mxr><span>${esc(dt(e[0]))}</span><b>${esc(e[1])}</b></div>`).join('') || '<div class=empty>Nessun evento nei prossimi giorni.</div>';
   const al = x.alloc, lbl = {M1_scalp: 'Scalping', M2_day: 'Day', M3_trend: 'Trend', M4_range: 'Rimbalzo', M5_rot: 'Rotazione', M6_contra: 'Contrarian', M7_dca: 'Accumulo', M8_astra: 'Trend Astra'};
-  const alloc = al && al.w ? Object.entries(al.w).sort((a, b) => b[1] - a[1]).map(([b, w]) => `<span class=mxw><i style="width:${Math.round(w * 100 / 0.3 * 100) / 100}%"></i>${esc(lbl[b] || b)} ${f(w * 100, 0)}%</span>`).join('') : '<div class=empty>In calcolo.</div>';
+  const famGone = b => b === 'M1_scalp' ? !!(bk('SC_BTC') && bk('SC_BTC').retired) : !!(bk(b) && bk(b).retired);
+  const alloc = al && al.w ? Object.entries(al.w).filter(([b]) => !famGone(b)).sort((a, b) => b[1] - a[1]).map(([b, w]) => `<span class=mxw><i style="width:${Math.round(w * 100 / 0.3 * 100) / 100}%"></i>${esc(lbl[b] || b)} ${f(w * 100, 0)}%</span>`).join('') : '<div class=empty>In calcolo.</div>';
   const mains = mainBooks(), beat = mains.filter(b => bk(b).vsBtc != null && bk(b).vsBtc > 0).length;
-  const v = (x.votes || [])[0];
+  const v = (x.votes || []).find(v => !(bk(v[1]) && bk(v[1]).retired));
   const vote = v ? `<div class=mxr><span>${esc(dt(v[0]))} · ${esc(shortBook(v[1]))} ${esc((v[2] || '').replace('USDT', ''))} ${esc(v[3])}</span><b class=${v[4] ? 'pos' : 'neg'}>${v[4] ? 'approvato' : 'bocciato'}</b></div>` : '<div class=empty>Nessuna votazione ancora: si vota sui trade grossi e su ogni ingresso di Trend, Rotazione, Contrarian e Trend Astra.</div>';
   const fr = d.btc_funding == null ? '–' : f(d.btc_funding * 100, 4) + '%';
   return [k, `<div class="card mxcard"><h3>Sala macchine<span class=cnt>agenti comuni</span></h3>
@@ -814,6 +828,51 @@ function ecoRow(k, e, bs, s0, ps, extra) {
   const note = extra || (dup ? 'duplicato, escluso dal totale' : (bs.length > 1 ? bs.length + ' portafogli · ' : '') + `V/P ${ww}/${ll} · ${op} aperte`);
   return `<div class="eco${extra && /^in pausa/.test(extra) ? ' paused' : ''}${dup ? ' dup' : ''}" data-t="${k}"><div class=en><b>${esc(e[0])}</b><small>${esc(note)}</small></div>${spark(totalSeries(bs), eq >= st)}<div class=ev>${E(eq, 0)}<small class=${cls(p)}>${sg(p)}${f(p)}%</small></div></div>`;
 }
+function histLine() {
+  const hb = histBooks(); if (!hb.length || !retiredBooks().length) return '';
+  const s0 = D.sum.s0, eq = hb.reduce((a, b) => a + bk(b).eq, 0), st = s0 * hb.length, p = (eq / st - 1) * 100;
+  return `<button type=button class=histline data-t=retired><span>Conto storico, anche i ritirati</span><b>${E(eq, 0)} <small>su ${E(st, 0)}</small> <span class=${cls(p)}>${sg(p)}${f(p, 1)}%</span></b></button>`;
+}
+function bindHist(el) { el.querySelectorAll('.histline').forEach(x => x.onclick = () => setTab('retired')); }
+function rebuildCard(k) {
+  const r = retiredBooks();
+  return [k, `<div class="card rebuild"><div class=lbl>Desk in ricostruzione</div><h2>Nessuna strategia attiva, per scelta</h2>
+  <div class=desc>Il 20/11 abbiamo ritirato tutte le strategie Meme: il voto d’ingresso sceglieva token che poi crollavano e il modo di misurare i risultati era sbagliato. Il desk intanto continua a raccogliere dati.</div>
+  <ol class=steps><li class=done><b>Pulizia</b><span>${r.length} portafogli ritirati, storico conservato</span></li>
+  <li class=now><b>Metro onesto</b><span>prezzi di ingresso e uscita dalla stessa fonte, registro delle decisioni</span></li>
+  <li><b>Balene 2.0</b><span>copia i portafogli che fanno guadagnare chi li copia</span></li>
+  <li><b>Sopravvissuti</b><span>token maturi e liquidi, dichiarata senza prove a favore</span></li></ol>${histLine()}</div>`, {after: bindHist}];
+}
+function retiredCard(k) {
+  const r = retiredBooks(); if (!r.length) return null;
+  const s0 = D.sum.s0, eq = r.reduce((a, b) => a + bk(b).eq, 0), st = s0 * r.length, p = (eq / st - 1) * 100;
+  return [k, `<div class="card retcard" data-t=retired><h3>Ritirati<span class=cnt>${r.length} portafogli · tocca per aprire</span></h3>
+  <div class=retsum><span>Risultato finale messo insieme</span><b>${E(eq, 0)} <span class=${cls(p)}>${sg(p)}${f(p, 1)}%</span></b></div></div>`, {after: el => el.onclick = () => setTab('retired')}];
+}
+function renderRetired() {
+  const r = retiredBooks(), s0 = D.sum.s0, groups = {};
+  for (const b of r) { const why = (bk(b).paused_reason || 'ritirato').replace(/^ritirato \d+\/\d+:\s*/, ''); (groups[why] = groups[why] || []).push(b); }
+  const eq = r.reduce((a, b) => a + bk(b).eq, 0), st = s0 * r.length, p = st ? (eq / st - 1) * 100 : 0;
+  const cards = Object.entries(groups).map(([why, bs], i) => {
+    const rows = bs.sort((a, c) => bk(c).pct - bk(a).pct).map(b => { const B = bk(b);
+      return `<div class=retrow><div class=en><b>${esc(shortBook(b))}</b><small>${B.closed} trade · ${B.wr == null ? '–' : f(B.wr, 0) + '% vinti'}</small></div>${spark(eqs[b] || [], B.eq >= s0)}<div class=ev>${E(B.eq, 0)}<small class=${cls(B.pct)}>${sg(B.pct)}${f(B.pct, 1)}%</small></div></div>`; }).join('');
+    const ge = bs.reduce((a, b) => a + bk(b).eq, 0), gp = (ge / (s0 * bs.length) - 1) * 100;
+    return ['ret_' + i, `<div class="card retgroup"><h3>${esc(why.charAt(0).toUpperCase() + why.slice(1))}<span class=cnt>${bs.length} · ${sg(gp)}${f(gp, 1)}%</span></h3>${rows}</div>`];
+  });
+  patch([['ret_head', `<div class=intro><div class=desc>Strategie spente il 20/11 perché i dati dicevano che non funzionano. Non comprano più; se avevano posizioni aperte, quelle si chiudono con le loro regole. Lo storico resta qui, così si vede da dove siamo partiti.</div>
+    <div class=retsum><span>${r.length} portafogli · risultato finale</span><b>${E(eq, 0)} <small>su ${E(st, 0)}</small> <span class=${cls(p)}>${sg(p)}${f(p, 1)}%</span></b></div></div>`]].concat(cards.length ? cards : [['ret_none', '<div class=card><div class=empty>Nessun portafoglio ritirato.</div></div>']]));
+}
+function diaryText(t) {
+  return esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').split(/\n{2,}/).map(par => `<p>${par.replace(/\n/g, '<br>')}</p>`).join('');
+}
+function renderDiario() {
+  const dia = ((STORES.meme.D.dia || {}).m || []).slice().sort((a, b) => b[0] - a[0]);
+  const KL = {resoconto: ['Resoconto', 'g'], giro: ['Giro', 'p'], cambio: ['Modifica', 'o']};
+  const items = dia.map((m, i) => { const [lab, c] = KL[m[1]] || [m[1], 'n'];
+    return ['dia_' + m[0], `<div class="card diary"><div class=dhead><span class="pi ${c}">${esc(lab)}</span><span class=dt>${esc(dt(m[0]))}</span></div><div class=dbody>${diaryText(m[2] || '')}</div></div>`]; });
+  patch([['dia_head', `<div class=intro><div class=desc>Quello che Cryptus ha visto, cambiato e proposto: il resoconto delle 8 e i giri delle 11, 15 e 22:15 (i giri scrivono solo quando cambiano qualcosa). Stesso testo che arriva su Telegram.</div></div>`]]
+    .concat(items.length ? items : [['dia_none', '<div class=card><div class=empty>Il diario si riempie da domani: il primo resoconto arriva alle 08:00.</div></div>']]));
+}
 function renderOverview() {
   const inc = includedBooks(), s0 = D.sum.s0, tot = deskTotals();
   const eqT = tot.eq, startT = tot.start, pct = tot.pct, pnl = eqT - startT;
@@ -834,17 +893,19 @@ function renderOverview() {
     const reason = bk(b).paused_reason || pauseReason();
     return ecoRow('paused', ev, [b], s0, ps, 'in pausa · ' + reason).replace('data-t="paused"', 'data-t="paused" data-b="' + b + '"');
   }).join('') : '';
-  const hk = 'o_hero';
+  const hk = 'o_hero', empty = !inc.length;
   patch([
-    heroCard(hk, `Totale in prova · ${tot.n} portafogli`, eqT, pnl, pct, w, l, [['Chiusi', cl], ['Aperte', ps.length], ['Partenza', '€' + f(tot.n * 1000, 0)]]),
-    chartCard('ch_all'),
-    ['o_eco', `<div class=card><h3>Portafogli attivi<span class=cnt>tocca per aprire</span></h3>${activeRows || '<div class=empty>Nessun portafoglio attivo.</div>'}</div>`, {after: el => el.querySelectorAll('.eco').forEach(x => x.onclick = () => setTab(x.dataset.t))}],
+    empty ? rebuildCard('o_rebuild') : [hk, heroCard(hk, `Totale attivi · ${tot.n} portafogli`, eqT, pnl, pct, w, l, [['Chiusi', cl], ['Aperte', ps.length], ['Partenza', '€' + f(tot.n * 1000, 0)]], histLine())[1], {after: bindHist}],
+    empty ? null : chartCard('ch_all'),
+    empty ? null : ['o_eco', `<div class=card><h3>Portafogli attivi<span class=cnt>tocca per aprire</span></h3>${activeRows || '<div class=empty>Nessun portafoglio attivo.</div>'}</div>`, {after: el => el.querySelectorAll('.eco').forEach(x => x.onclick = () => setTab(x.dataset.t))}],
     DESK === 'major' ? majorCard('o_mx') : null,
     pauseRows ? ['o_pause', `<div class="card paused-card"><h3>In pausa<span class=cnt>niente nuovi ingressi</span></h3><div class=desc style="margin:0 0 8px">${esc(pauseReason())}. Le posizioni già aperte restano in gestione.</div>${pauseRows}</div>`, {after: el => el.querySelectorAll('.eco').forEach(x => x.onclick = () => { if (x.dataset.b) sub.paused = x.dataset.b; setTab('paused'); })}] : null,
-    positionsCard('o_pos', ps.filter(p => !hiddenBook(p.book) && (inc.includes(p.book) || pausedBooks().includes(p.book))), true),
+    empty && !ps.length ? null : positionsCard('o_pos', ps.filter(p => !hiddenBook(p.book) && (inc.includes(p.book) || pausedBooks().includes(p.book))), true),
     feedCard('o_feed', feedLines(null), 'Attività live', 'tutti gli agenti'),
-    agentsCard('o_ag', liveAgents(allAgents()), 'Stato degli agenti'),
-    tradesCard('o_tr', inc.concat(pb)), labCard('o_lab', liveLabs(), null), DESK === 'major' ? null : killsCard('o_kr')].filter(Boolean));
+    agentsCard('o_ag', liveAgents(allAgents()), 'Catena di agenti'),
+    empty ? null : tradesCard('o_tr', inc.concat(pb)), liveLabs().length ? labCard('o_lab', liveLabs(), null) : null,
+    retiredCard('o_ret'), DESK === 'major' || empty ? null : killsCard('o_kr')].filter(Boolean));
+  if (empty) return;
   afterHero(hk);
   const ser = totalSeries(inc); const up = !ser.length || ser[ser.length - 1][1] >= startT;
   chart('ch_all', [['Totale', ser, up ? '#1fe08a' : '#ff4d64', true]], eur(startT));   // base line in EUR like the series
@@ -872,11 +933,11 @@ function renderEco(e) {
     chartCard(ck),
     positionsCard(p + 'pos', ps, false),
     feedCard(p + 'feed', e === 'paused' ? [...new Map(pausedBooks().flatMap(bb => feedLines(ecoOf(bb))).map(x => [x[0], x])).values()].sort((a, c) => c[0] - a[0]).slice(0, 40) : feedLines(e), 'Attività live', e === 'paused' ? 'In pausa' : esc((D.sum.eco[e] || ['', []])[0])),
-    agentsCard(p + 'ag', liveAgents(ECO[e] ? ECO[e].agents : allAgents()), 'Stato degli agenti'),
+    agentsCard(p + 'ag', liveAgents(ECO[e] ? ECO[e].agents : allAgents()), 'Catena di agenti'),
     overshootNote(p + 'ov', B),
     DESK === 'major' ? pagellaCard(p + 'pg', b, B) : null,
     DESK === 'major' && e === 'm_scalp' ? scalpCard(p + 'sc') : null,
-    tradesCard(p + 'tr', [b]), labCard(p + 'lab', ECO[e] ? ECO[e].labs : [], bs),
+    tradesCard(p + 'tr', [b]), ECO[e] && ECO[e].labs && ECO[e].labs.length ? labCard(p + 'lab', ECO[e].labs, bs) : null,
     e === 'prudente' || e === 'aggressivo' || e === 'pump' || e === 'esploratore' || e === 'paused' ? killsCard(p + 'kr') : null].filter(Boolean));
   afterHero(hk);
   chart(ck, [[name, ser, B.eq >= s0 ? '#1fe08a' : '#ff4d64', true]], 1000);
@@ -1014,21 +1075,23 @@ function renderTabs() {
   const pb = pausedBooks();
   let lead = null, leadPct = -Infinity;
   for (const x of activeEcos) if (!x.bs.some(b => bk(b).exclude_from_totals) && x.pct != null && x.pct > leadPct) { leadPct = x.pct; lead = x.k; }
-  const items = [{k: 'overview', label: 'Panoramica', pct: null, open: false, bits: []}];
+  const items = [{k: 'overview', label: 'Panoramica', pct: null, open: false, bits: []}, {k: 'diario', label: 'Diario', pct: null, open: false, bits: []}];
   if (pb.length) {
     const eq = pb.reduce((a, b) => a + bk(b).eq, 0), st = D.sum.s0 * pb.length;
     items.push({k: 'paused', label: 'In pausa', pct: st ? (eq / st - 1) * 100 : null, open: pb.some(b => open[b]), bits: pb.map(b => bk(b).pct), paused: true, gap: false});
   }
   items.push({k: '_gap', gapOnly: true});
   activeEcos.forEach(x => items.push({...x, gap: false}));
+  const rb = retiredBooks();
+  if (rb.length) { const eq = rb.reduce((a, b) => a + bk(b).eq, 0), st = D.sum.s0 * rb.length; items.push({k: '_gap2', gapOnly: true}); items.push({k: 'retired', label: 'Ritirati', pct: (eq / st - 1) * 100, open: false, bits: [], paused: true}); }
   const have = [...el.children], byK = Object.fromEntries(have.map(t => [t.dataset.t, t]));
   const want = items.map(x => x.k), nodes = [];
   const scale = Math.max(2, ...ecos.map(x => Math.abs(x.pct || 0)));
   const prevOn = el.querySelector('.tab.on') && el.querySelector('.tab.on').dataset.t;
   for (const it of items) {
     if (it.gapOnly) {
-      let g = el.querySelector('.tabs-gap');
-      if (!g) { g = document.createElement('span'); g.className = 'tabs-gap'; g.setAttribute('aria-hidden', 'true'); }
+      let g = el.querySelector('.tabs-gap[data-g="' + it.k + '"]');
+      if (!g) { g = document.createElement('span'); g.className = 'tabs-gap'; g.dataset.g = it.k; g.setAttribute('aria-hidden', 'true'); }
       nodes.push(g);
       continue;
     }
@@ -1089,11 +1152,11 @@ function render() {
     if (D.sum.eco[tab]) sub.paused = (D.sum.eco[tab][1] || []).find(b => D.sum.b[b] && !hiddenBook(b)) || sub.paused;
     tab = 'paused'; localStorage.setItem('cx_tab', tab);
   }
-  if (tab !== 'overview' && tab !== 'paused' && (!D.sum.eco[tab] || hiddenEco(tab) || !booksOf(tab).length)) tab = 'overview';
+  if (tab !== 'overview' && tab !== 'paused' && tab !== 'retired' && tab !== 'diario' && (!D.sum.eco[tab] || hiddenEco(tab) || !booksOf(tab).length)) tab = 'overview';
   STORES[DESK].tab = tab;
   renderBoard();
   renderTabs();
-  if (tab === 'overview') renderOverview(); else renderEco(tab);
+  if (tab === 'overview') renderOverview(); else if (tab === 'retired') renderRetired(); else if (tab === 'diario') renderDiario(); else renderEco(tab);
   const foot = DESK === 'major'
     ? `Cryptus Major · solo paper trading · ogni portafoglio parte da €1.000 virtuali · commissioni, spread e slippage inclusi<br>gli short sono perpetui simulati (funding incluso) · nessuna chiave, nessun ordine reale`
     : `Solo paper trading · ogni portafoglio parte da €1.000 virtuali · cambio fisso 1 EUR = ${f(FX(), 4)} USD<br>nessun wallet, nessuna chiave, nessun ordine reale`;
