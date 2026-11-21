@@ -279,6 +279,9 @@ img.tk{background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.
 .retrow{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line);opacity:.85}
 .retrow .en{flex:1;min-width:0;display:flex;flex-direction:column}.retrow .en b{font-size:13.5px}.retrow .en small{color:var(--mut);font-size:11.5px}
 .retrow .ev{text-align:right;font-weight:700;display:flex;flex-direction:column;font-size:13.5px}.retrow .ev small{font-size:11.5px;font-weight:600}
+.offintro{color:var(--mut);font-size:12px;line-height:1.45;margin:2px 0 6px}
+.offrow{align-items:flex-start}.offrow .en small.offnote{margin-top:3px;font-size:11px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.offrow .ev{align-items:flex-end;gap:5px}
 .diary .dhead{display:flex;align-items:center;justify-content:space-between;margin:0 0 8px}
 .diary .dt{color:var(--mut);font-size:11.5px}
 .diary .dbody{font-size:13.5px;line-height:1.55;color:#dfe4ea}.diary .dbody p{margin:0 0 9px}.diary .dbody p:last-child{margin:0}

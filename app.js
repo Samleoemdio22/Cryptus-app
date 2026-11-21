@@ -892,13 +892,22 @@ function renderRetired() {
 function diaryText(t) {
   return esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').split(/\n{2,}/).map(par => `<p>${par.replace(/\n/g, '<br>')}</p>`).join('');
 }
+function officinaCard() {   // v13: registro dell'Officina (idee provate sui dati passati, Meme e Major), chiave «off» del desk Meme
+  const off = STORES.meme.D.off; if (!off || !(off.r || []).length) return [];
+  const EL = {accettata: ['accettata', 'g'], scartata: ['scartata', 'r'], riferimento: ['riferimento', 'n']};
+  const rows = off.r.slice().sort((a, b) => b[0] - a[0]).map(([ts, desk, nome, n, media, esito, nota]) => { const [el, ec] = EL[esito] || ['provata', 'n'];
+    return `<div class="retrow offrow"><div class=en><b>${esc(nome)}</b><small>${desk === 'major' ? 'Major' : 'Meme'} · ${esc(dt(ts))} · ${n == null ? '–' : f(n, 0)} trade simulati</small>${nota ? `<small class=offnote>${esc(nota)}</small>` : ''}</div>`
+      + `<div class=ev><span class="pi ${ec}">${el}</span><small class=${cls(media)}>${media == null ? '–' : sg(media) + f(media, 2) + '% a trade'}</small></div></div>`; }).join('');
+  return [['off_ideas', `<div class="card retgroup"><h3>Idee provate sui dati passati<span class=cnt>${off.n} in tutto</span></h3>`
+    + `<div class=offintro>Prima di accendere una strategia Cryptus la prova sullo storico. Qui ci sono tutte le prove, anche quelle andate male: più idee si provano, più forte deve essere la prova perché una sembri buona. I risultati sullo storico non sono una promessa.</div>${rows}</div>`]];
+}
 function renderDiario() {
   const dia = ((STORES.meme.D.dia || {}).m || []).slice().sort((a, b) => b[0] - a[0]);
   const KL = {resoconto: ['Resoconto', 'g'], giro: ['Giro', 'p'], cambio: ['Modifica', 'o']};
   const items = dia.map((m, i) => { const [lab, c] = KL[m[1]] || [m[1], 'n'];
     return ['dia_' + m[0], `<div class="card diary"><div class=dhead><span class="pi ${c}">${esc(lab)}</span><span class=dt>${esc(dt(m[0]))}</span></div><div class=dbody>${diaryText(m[2] || '')}</div></div>`]; });
-  patch([['dia_head', `<div class=intro><div class=desc>Quello che Cryptus ha visto, cambiato e proposto: il resoconto delle 8 e i giri delle 11, 15 e 22:15 (i giri scrivono solo quando cambiano qualcosa). Stesso testo che arriva su Telegram.</div></div>`]]
-    .concat(items.length ? items : [['dia_none', '<div class=card><div class=empty>Il diario si riempie da domani: il primo resoconto arriva alle 08:00.</div></div>']]));
+  patch([['dia_head', `<div class=intro><div class=desc>Quello che Cryptus ha visto, cambiato e proposto: il resoconto delle 8 e i giri delle 11, 15 e 22:15. Stesso testo che arriva su Telegram. Sotto il messaggio più recente, tutte le idee provate sui dati passati.</div></div>`]]
+    .concat(items.slice(0, 1), officinaCard(), items.length ? items.slice(1) : [['dia_none', '<div class=card><div class=empty>Il diario si riempie da domani: il primo resoconto arriva alle 08:00.</div></div>']]));
 }
 function renderOverview() {
   const inc = includedBooks(), s0 = D.sum.s0, tot = deskTotals();
