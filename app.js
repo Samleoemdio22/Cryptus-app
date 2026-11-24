@@ -20,7 +20,7 @@ try {
 } catch (e) {}
 
 // ---------- labels ----------
-const A = {Scout:['Scout','#5aa9ff','cerca token nuovi'],Filter:['Filter','#ff4d64','scarta quelli troppo rischiosi'],Analyst:['Analyst','#f6c453','dà un voto a ogni token'],
+const A = {Scout:['Scout','#5aa9ff','cerca token nuovi'],Filter:['Filter','#ff4d64','scarta quelli troppo rischiosi'],Analyst:['Analyst','#f6c453','misura quanto un token rischia di crollare: per ora non decide'],
  Executor:['Executor','#1fe08a','compra e vende, solo in prova'],Risk:['Risk','#ff9b45','chiude se il prezzo va troppo contro'],Logger:['Logger','#9aa4b2','tiene lo storico'],
  Regime:['Regime','#a78bfa','dice se il mercato è buono o debole'],Scalp:['Scalp','#2fe0d2','cerca mosse rapide di pochi minuti'],Lab:['Lab','#ff7ad9','prova idee in parallelo, senza toccare gli originali'],
  Sentinel:['Sentinel','#ff6b3d','vende se il prezzo sta crollando'],Hunter:['Hunter','#e2c044','cerca portafogli bravi da copiare'],Mirror:['Mirror','#7dd3fc','copia i loro acquisti'],
@@ -36,7 +36,8 @@ const A = {Scout:['Scout','#5aa9ff','cerca token nuovi'],Filter:['Filter','#ff4d
  'Segugio lento':['Segugio lento','#7dd3fc','guarda il trend di ogni giorno su 16 monete'],Esattore:['Esattore','#e2c044','incassa il funding ogni 8 ore'],
  Anagrafe:['Anagrafe','#94a3b8','guarda chi ha comprato il token appena nato: per ora misura, non decide'],
  Classifica:['Classifica','#1fe08a','mette in fila le 20 monete, dalla più forte alla più debole'],
- Bilancia:['Bilancia','#7dd3fc','controlla che acquisti e scommesse al ribasso pesino uguale']};
+ Bilancia:['Bilancia','#7dd3fc','controlla che acquisti e scommesse al ribasso pesino uguale'],
+ Quotazioni:['Quotazioni','#f6c453','aspetta le monete nuove su Binance e le segue nella prima settimana']};
 const ICON={Scout:"<circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/>",Filter:"<path d='M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z'/><path d='M9 12l2 2 4-4'/>",
  Analyst:"<path d='M4 19V9M10 19V5M16 19v-7M22 19H2'/>",Executor:"<path d='M13 2L4 14h7l-1 8 9-12h-7z'/>",Risk:"<circle cx='12' cy='12' r='9'/><circle cx='12' cy='12' r='5'/><circle cx='12' cy='12' r='1'/>",
  Logger:"<path d='M5 4h11l3 3v13H5z'/><path d='M9 10h6M9 14h6M9 18h4'/>",Regime:"<path d='M3 12h4l3-8 4 16 3-8h4'/>",Scalp:"<circle cx='12' cy='13' r='8'/><path d='M12 9v4l2.5 2.5M9 2h6'/>",
@@ -54,7 +55,8 @@ const ICON={Scout:"<circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/>",F
  Rate:"<path d='M4 20h16M6 16v4M10 12v8M14 9v11M18 5v15'/>",
  Incroci:"<path d='M5 19L19 5'/><path d='M5 9l6 4'/><path d='M13 13l6 5'/>"};
 Object.assign(ICON, {Anagrafe: "<rect x='3' y='5' width='18' height='14' rx='2'/><circle cx='9' cy='11' r='2.2'/><path d='M5.5 16c.6-1.6 1.9-2.4 3.5-2.4s2.9.8 3.5 2.4M15 10h3M15 14h3'/>",
- Classifica: "<path d='M4 6h16M4 12h11M4 18h6'/>", Bilancia: "<path d='M12 3v18M7 21h10M5 7h14M5 7l-3 7h6zM19 7l-3 7h6z'/>"});
+ Classifica: "<path d='M4 6h16M4 12h11M4 18h6'/>", Bilancia: "<path d='M12 3v18M7 21h10M5 7h14M5 7l-3 7h6zM19 7l-3 7h6z'/>",
+ Quotazioni: "<path d='M12 3l2.6 5.6 6 .8-4.4 4.2 1.1 6-5.3-3-5.3 3 1.1-6L3.4 9.4l6-.8z'/>"});
 Object.assign(ICON, {Pagellista: "<path d='M9 3h6l1 2h3v16H5V5h3z'/><path d='M9 12l2 2 4-4'/>", 'Anti-inseguimento': "<circle cx='12' cy='12' r='9'/><path d='M5.6 5.6l12.8 12.8'/>",
  'Segugio lento': "<path d='M3 17l6-6 4 4 8-8'/><path d='M14 7h7v7'/>", Esattore: "<circle cx='12' cy='12' r='9'/><path d='M12 7v10M9 9.5c0-1.4 1.3-2.5 3-2.5s3 1 3 2.2c0 2.8-6 1.8-6 4.6 0 1.3 1.3 2.2 3 2.2s3-1.1 3-2.5'/>"});
 const BOOK_NAME={A_spec:'Prudente A · chiude a −6%',B_wide:'Prudente B · chiude a −12%',C_spec_4h:'Prudente C · chiude dopo 4 ore',D_wide_noregime:'Prudente D · anche a mercato debole',
