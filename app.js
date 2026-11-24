@@ -63,14 +63,15 @@ const BOOK_NAME={A_spec:'Prudente A · chiude a −6%',B_wide:'Prudente B · chi
  X_aggressive:'Aggressivo',X_aggr_sentinel:'Aggressivo + Sentinel',S_scalp:'Scalping',P_pump:'Pump organici · rialzi veri',E_explore:'Esploratore · token più nuovi e piccoli',W_whale:'Balene · almeno 2 portafogli bravi insieme',W2_balene:'Balene 2.0 · copia chi fa guadagnare chi copia',S2_sopravvissuti:'Sopravvissuti · token maturi che salgono piano',R2_rimbalzo:'Rimbalzo · dopo un crollo, quando i compratori tornano'};
 const BOOK_SHORT={A_spec:'Prudente A',B_wide:'Prudente B',C_spec_4h:'Prudente C',D_wide_noregime:'Prudente D',
  X_aggressive:'Aggressivo',X_aggr_sentinel:'Sentinel',S_scalp:'Scalping',P_pump:'Pump',E_explore:'Esploratore',W_whale:'Balene',W2_balene:'Balene 2.0',S2_sopravvissuti:'Sopravvissuti',R2_rimbalzo:'Rimbalzo'};
-const shortBook = b => BOOK_SHORT[b] || (BOOK_NAME[b] || b).split(' · ')[0];
+const ecoLabel = b => { const e = D.sum && D.sum.eco && ecoOf(b), ev = e && D.sum.eco[e]; return ev && ev[1].length === 1 && ev[1][0] === b ? ev[0] : null; };   // v16: nome dalla configurazione del desk quando l'app non ne ha uno suo
+const shortBook = b => BOOK_SHORT[b] || (BOOK_NAME[b] || ecoLabel(b) || b).split(' · ')[0];
 Object.assign(BOOK_NAME, {M2_day:'Day trading · rotture all’apertura', M3_trend:'Trend · pochi trade lunghi', M4_range:'Rimbalzo · solo mercato a zig-zag', M5_rot:'Rotazione · le più forti contro Bitcoin',
  M6_contra:'Contrarian · contro la folla', M7_dca:'Accumulo · un po’ ogni giorno', M8_astra:'Trend Astra · incroci delle medie giornaliere',
  M9_lento:'Trend lento · 16 monete, solo quando salgono', M10_funding:'Funding · incassa senza scommettere sul prezzo'});
 Object.assign(BOOK_SHORT, {M2_day:'Day trading', M3_trend:'Trend', M4_range:'Rimbalzo', M5_rot:'Rotazione', M6_contra:'Contrarian', M7_dca:'Accumulo', M8_astra:'Trend Astra', M9_lento:'Trend lento', M10_funding:'Funding'});
 const BOOK_TINY={A_spec:'PrA',B_wide:'PrB',C_spec_4h:'PrC',D_wide_noregime:'PrD',
  X_aggressive:'Agg',X_aggr_sentinel:'Sen',S_scalp:'Scl',P_pump:'Pmp',E_explore:'Esp',W_whale:'Bal',W2_balene:'B2',S2_sopravvissuti:'Sop',R2_rimbalzo:'Rim'};
-Object.assign(BOOK_TINY, {M2_day:'Day', M3_trend:'Trd', M4_range:'Rmb', M5_rot:'Rot', M6_contra:'Ctr', M7_dca:'Acc', M8_astra:'Ast', M9_lento:'Len', M10_funding:'Fun'});
+Object.assign(BOOK_TINY, {M2_day:'Day', M3_trend:'Trd', M4_range:'Rmb', M5_rot:'Rot', M6_contra:'Ctr', M7_dca:'Acc', M8_astra:'Ast', M9_lento:'Len', M10_funding:'Fun', M11_lc:'L/C', M12_fund:'F4', M13_nuove:'Nuo', N2_compratori:'Com', G2_saldo:'Sal', W3_doppie:'B3'});
 for (const c of ['BTC','ETH','SOL','BNB','XRP','DOGE','ZEC','HYPE']) {
   BOOK_NAME['SC_' + c] = 'Scalping ' + c; BOOK_SHORT['SC_' + c] = c; BOOK_TINY['SC_' + c] = c.slice(0, 4);
   BOOK_NAME['L_SC_' + c] = 'Lab ' + c + ' · più trade'; BOOK_SHORT['L_SC_' + c] = c + ' +trade'; BOOK_TINY['L_SC_' + c] = c.slice(0, 2) + '+';
@@ -913,7 +914,7 @@ function renderDiario() {
   const KL = {resoconto: ['Resoconto', 'g'], giro: ['Giro', 'p'], cambio: ['Modifica', 'o']};
   const items = dia.map((m, i) => { const [lab, c] = KL[m[1]] || [m[1], 'n'];
     return ['dia_' + m[0], `<div class="card diary"><div class=dhead><span class="pi ${c}">${esc(lab)}</span><span class=dt>${esc(dt(m[0]))}</span></div><div class=dbody>${diaryText(m[2] || '')}</div></div>`]; });
-  patch([['dia_head', `<div class=intro><div class=desc>Quello che Cryptus ha visto, cambiato e proposto: il resoconto delle 8 e i giri delle 11, 15 e 22:15. Stesso testo che arriva su Telegram. Sotto il messaggio più recente, tutte le idee provate sui dati passati.</div></div>`]]
+  patch([['dia_head', `<div class=intro><div class=desc>Quello che Cryptus ha visto, cambiato e proposto: il resoconto delle 8 e i giri delle 10, 13, 16, 19 e 22:15. Stesso testo che arriva su Telegram. Sotto il messaggio più recente, tutte le idee provate sui dati passati.</div></div>`]]
     .concat(items.slice(0, 1), officinaCard(), items.length ? items.slice(1) : [['dia_none', '<div class=card><div class=empty>Il diario si riempie da domani: il primo resoconto arriva alle 08:00.</div></div>']]));
 }
 function renderOverview() {
@@ -921,7 +922,8 @@ function renderOverview() {
   const eqT = tot.eq, startT = tot.start, pct = tot.pct, pnl = eqT - startT;
   const w = inc.reduce((a, b) => a + bk(b).w, 0), l = inc.reduce((a, b) => a + bk(b).l, 0), cl = inc.reduce((a, b) => a + bk(b).closed, 0);
   const ps = positions();
-  const activeRows = Object.entries(D.sum.eco).filter(([k]) => !ecoPaused(k) && !hiddenEco(k)).map(([k, e]) => {
+  const isObs = e => { const m = e[1].filter(b => D.sum.b[b] && !bk(b).lab && !hiddenBook(b) && !bk(b).paused); return m.length > 0 && m.every(b => bk(b).observation); };   // v16: le strategie in osservazione hanno una scheda loro
+  const ecoRows = want => Object.entries(D.sum.eco).filter(([k, e]) => !ecoPaused(k) && !hiddenEco(k) && isObs(e) === want).map(([k, e]) => {
     const mains = e[1].filter(b => D.sum.b[b] && !bk(b).lab && !hiddenBook(b) && !bk(b).paused);
     if (mains.length) return ecoRow(k, e, mains, s0, ps);
     if (k === 'm_scalp') {
@@ -930,6 +932,7 @@ function renderOverview() {
     }
     return '';
   }).join('');
+  const activeRows = ecoRows(false), obsRows = ecoRows(true);
   const pb = pausedBooks();
   const pauseRows = pb.length ? pb.map(b => {
     const e = ecoOf(b), ev = (e && D.sum.eco[e]) || [shortBook(b), [b]];
@@ -941,6 +944,7 @@ function renderOverview() {
     empty ? rebuildCard('o_rebuild') : [hk, heroCard(hk, `Totale attivi · ${tot.n} portafogli`, eqT, pnl, pct, w, l, [['Chiusi', cl], ['Aperte', ps.length], ['Partenza', '€' + f(tot.n * 1000, 0)]], histLine())[1], {after: bindHist}],
     empty ? null : chartCard('ch_all'),
     empty ? null : ['o_eco', `<div class=card><h3>Portafogli attivi<span class=cnt>tocca per aprire</span></h3>${activeRows || '<div class=empty>Nessun portafoglio attivo.</div>'}</div>`, {after: el => el.querySelectorAll('.eco').forEach(x => x.onclick = () => setTab(x.dataset.t))}],
+    obsRows ? ['o_obs', `<div class=card><h3>In prova<span class=cnt>fuori dal totale · tocca per aprire</span></h3>${obsRows}</div>`, {after: el => el.querySelectorAll('.eco').forEach(x => x.onclick = () => setTab(x.dataset.t))}] : null,
     DESK === 'major' ? majorCard('o_mx') : null,
     pauseRows ? ['o_pause', `<div class="card paused-card"><h3>In pausa<span class=cnt>niente nuovi ingressi</span></h3><div class=desc style="margin:0 0 8px">${esc(pauseReason())}. Le posizioni già aperte restano in gestione.</div>${pauseRows}</div>`, {after: el => el.querySelectorAll('.eco').forEach(x => x.onclick = () => { if (x.dataset.b) sub.paused = x.dataset.b; setTab('paused'); })}] : null,
     empty && !ps.length ? null : positionsCard('o_pos', ps.filter(p => !hiddenBook(p.book) && (inc.includes(p.book) || pausedBooks().includes(p.book))), true),
@@ -958,7 +962,7 @@ function renderEco(e) {
   if (!sub[e] || !bs.includes(sub[e])) sub[e] = bs[0];
   const b = sub[e], B = bk(b), s0 = D.sum.s0, ser = eqs[b] || [];
   const ps = positions().filter(p => p.book === b);
-  const name = B.lab ? labName(b) + (DESK === 'major' ? ' · gemello Lab' : '') : (BOOK_NAME[b] || b);
+  const name = B.lab ? labName(b) + (DESK === 'major' ? ' · gemello Lab' : '') : (BOOK_NAME[b] || ecoLabel(b) || b);
   const p = e + '_' + b + '_', hk = p + 'hero', ck = 'ch_' + e + '_' + b.replace(/\W/g, '');
   const isPause = e === 'paused' || (B && B.paused);
   const desc = isPause
