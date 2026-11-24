@@ -33,7 +33,10 @@ const A = {Scout:['Scout','#5aa9ff','cerca token nuovi'],Filter:['Filter','#ff4d
  Folla:['Folla','#ff6b3d','entra contro la folla quando esagera'],Rate:['Rate','#7dd3fc','compra un po’ ogni giorno'],
  Incroci:['Incroci','#1fe08a','entra quando la media veloce incrocia quella lenta'],
  Pagellista:['Pagellista','#a78bfa','dà il voto ai wallet: quanto guadagna chi li copia'],'Anti-inseguimento':['Anti-inseguimento','#ff9b45','non copia se il prezzo è già salito'],
- 'Segugio lento':['Segugio lento','#7dd3fc','guarda il trend di ogni giorno su 16 monete'],Esattore:['Esattore','#e2c044','incassa il funding ogni 8 ore']};
+ 'Segugio lento':['Segugio lento','#7dd3fc','guarda il trend di ogni giorno su 16 monete'],Esattore:['Esattore','#e2c044','incassa il funding ogni 8 ore'],
+ Anagrafe:['Anagrafe','#94a3b8','guarda chi ha comprato il token appena nato: per ora misura, non decide'],
+ Classifica:['Classifica','#1fe08a','mette in fila le 20 monete, dalla più forte alla più debole'],
+ Bilancia:['Bilancia','#7dd3fc','controlla che acquisti e scommesse al ribasso pesino uguale']};
 const ICON={Scout:"<circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/>",Filter:"<path d='M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z'/><path d='M9 12l2 2 4-4'/>",
  Analyst:"<path d='M4 19V9M10 19V5M16 19v-7M22 19H2'/>",Executor:"<path d='M13 2L4 14h7l-1 8 9-12h-7z'/>",Risk:"<circle cx='12' cy='12' r='9'/><circle cx='12' cy='12' r='5'/><circle cx='12' cy='12' r='1'/>",
  Logger:"<path d='M5 4h11l3 3v13H5z'/><path d='M9 10h6M9 14h6M9 18h4'/>",Regime:"<path d='M3 12h4l3-8 4 16 3-8h4'/>",Scalp:"<circle cx='12' cy='13' r='8'/><path d='M12 9v4l2.5 2.5M9 2h6'/>",
@@ -50,6 +53,8 @@ const ICON={Scout:"<circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/>",F
  Forza:"<path d='M6 20V10M12 20V4M18 20v-7'/>",Folla:"<circle cx='9' cy='8' r='3'/><circle cx='17' cy='10' r='2.5'/><path d='M3 20c.8-3.5 3.2-6 6-6s5.2 2.5 6 6M14 20c.4-2.2 1.6-4 3-4s2.6 1.8 3 4'/>",
  Rate:"<path d='M4 20h16M6 16v4M10 12v8M14 9v11M18 5v15'/>",
  Incroci:"<path d='M5 19L19 5'/><path d='M5 9l6 4'/><path d='M13 13l6 5'/>"};
+Object.assign(ICON, {Anagrafe: "<rect x='3' y='5' width='18' height='14' rx='2'/><circle cx='9' cy='11' r='2.2'/><path d='M5.5 16c.6-1.6 1.9-2.4 3.5-2.4s2.9.8 3.5 2.4M15 10h3M15 14h3'/>",
+ Classifica: "<path d='M4 6h16M4 12h11M4 18h6'/>", Bilancia: "<path d='M12 3v18M7 21h10M5 7h14M5 7l-3 7h6zM19 7l-3 7h6z'/>"});
 Object.assign(ICON, {Pagellista: "<path d='M9 3h6l1 2h3v16H5V5h3z'/><path d='M9 12l2 2 4-4'/>", 'Anti-inseguimento': "<circle cx='12' cy='12' r='9'/><path d='M5.6 5.6l12.8 12.8'/>",
  'Segugio lento': "<path d='M3 17l6-6 4 4 8-8'/><path d='M14 7h7v7'/>", Esattore: "<circle cx='12' cy='12' r='9'/><path d='M12 7v10M9 9.5c0-1.4 1.3-2.5 3-2.5s3 1 3 2.2c0 2.8-6 1.8-6 4.6 0 1.3 1.3 2.2 3 2.2s3-1.1 3-2.5'/>"});
 const BOOK_NAME={A_spec:'Prudente A · chiude a −6%',B_wide:'Prudente B · chiude a −12%',C_spec_4h:'Prudente C · chiude dopo 4 ore',D_wide_noregime:'Prudente D · anche a mercato debole',
@@ -396,7 +401,7 @@ function bk(b) {
 }
 function liveAgents(list) {
   const ag = D.ag2 || D.ag || {};
-  return list.filter(k => ag[k] && !(k === 'Sentinel' && hiddenEco('sentinel')));
+  return list.filter(k => (ag[k] || pgAgent(k)) && !(k === 'Sentinel' && hiddenEco('sentinel')));   // v14: anche chi non scrive nel feed ma ha una pagella (Bilancia)
 }
 function liveLabs() { return [...new Set(Object.keys(D.sum.eco || {}).filter(e => !hiddenEco(e)).flatMap(e => (ECO[e] && ECO[e].labs) || []))]; }
 function ecoOf(b) { const v = bk(b); const base = (v && v.base) || b; for (const [k, e] of Object.entries(D.sum.eco || {})) if (e[1].includes(base)) return k; return null; }
@@ -674,7 +679,7 @@ const lastAg = {};
 // ---------- v12: Giudice e pagelle (pagelle.json via chiave pg, solo canale MQTT del Meme) ----------
 const PG = () => STORES.meme.D.pg || {};
 const LV = {'niente da dire': ['ancora presto', 'n'], 'indizio': ['indizio', 'a'], 'dimostrato su carta': ['dimostrato su carta', 'g'], 'peggio di zero': ['peggio di zero', 'r']};
-const VT = {buono: ['buono', 'g'], neutro: ['neutro', 'n'], 'da guardare': ['da guardare', 'a'], 'n.d.': ['non misurabile', 'n']};
+const VT = {buono: ['buono', 'g'], neutro: ['neutro', 'n'], 'da guardare': ['da guardare', 'a'], 'n.d.': ['ancora senza voto', 'n']};
 function pgBook(b) { return ((PG().strategie || {})[b]) || null; }
 function pgAgent(a) { return (((PG().agenti || {})[DESK] || {})[a]) || null; }
 function tesCard(k) {
@@ -698,7 +703,7 @@ function agentsCard(k, list, title) {
     const kc = x ? (KIND[x[1]] || KIND.info)[1] : '#5b636e';
     const msg = x && x[2] && !mentionsHiddenBook(x[2]) ? x[2] : (old[a] && old[a][1] && !mentionsHiddenBook(old[a][1]) ? old[a][1] : '');
     const body = msg && x && x[2] && !mentionsHiddenBook(x[2]) ? `${logo(x[3])}<span class=tx>${esc(x[2].replace(BIDI, ''))}</span>${pills(x[4], 2)}${rt(x[0])}`
-      : msg ? `<span class=tx>${esc(msg)}</span>${rt((old[a] || [])[0])}` : `<span class="tx mut">nessuna azione ancora</span>`;
+      : msg ? `<span class=tx>${esc(msg)}</span>${rt((old[a] || [])[0])}` : `<span class="tx mut">${pgAgent(a) ? 'lavora in silenzio: vedi la pagella' : 'nessuna azione ancora'}</span>`;
     const pv = pgAgent(a), vv = pv && (VT[pv.voto] || [pv.voto, 'n']);
     const pgl = pv ? `<div class=pgl><span class="pi ${vv[1]}">pagella · ${esc(vv[0])}</span><span>${esc(pv.frase || '')}</span></div>` : '';
     return `<div class="arow${fresh ? ' flash' : ''}" style="--kc:${kc}" title="${esc((role || nm) + (x && x[5] ? ' · ' + x[5] : ''))}"><span class=ic style="background:${c}1a;color:${c}">${svg(a)}</span><div class=pl><div class=pt><b>${esc(nm)}</b>${role ? `<small>${esc(role)}</small>` : ''}</div><div class=abody>${body}</div>${pgl}</div></div>`;
